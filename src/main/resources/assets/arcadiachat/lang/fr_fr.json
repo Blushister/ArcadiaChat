@@ -1,0 +1,9 @@
+{
+  "arcadiachat.tab.all": "Tout",
+  "arcadiachat.tab.global": "Global",
+  "arcadiachat.tab.server": "Serveur",
+  "arcadiachat.tab.private": "Privé",
+  "arcadiachat.tab.system": "Système",
+  "arcadiachat.scope.global": "→ tous les serveurs",
+  "arcadiachat.scope.local": "→ %s uniquement"
+}
