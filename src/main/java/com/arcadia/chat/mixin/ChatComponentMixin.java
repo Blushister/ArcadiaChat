@@ -2,7 +2,6 @@ package com.arcadia.chat.mixin;
 
 import java.util.List;
 
-import com.arcadia.chat.tabs.Category;
 import com.arcadia.chat.tabs.ChatView;
 import com.arcadia.chat.tabs.TabState;
 import net.minecraft.client.GuiMessage;
@@ -16,6 +15,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -30,13 +30,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChatComponent.class)
 public abstract class ChatComponentMixin implements ChatView {
 
+    private static final String ADD_MESSAGE =
+            "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V";
+
     @Shadow
     @Final
     private List<GuiMessage> allMessages;
 
-    /** Categorie du message en cours d'ajout ; null en dehors d'un ajout (reaffichage, redimensionnement...). */
+    /** Message en cours d'ajout ; null en dehors d'un ajout (reaffichage, redimensionnement...). */
     @Unique
-    private Category arcadiachat$adding;
+    private TabState.Incoming arcadiachat$adding;
+    @Unique
+    private Component arcadiachat$content;
 
     @Shadow
     private void refreshTrimmedMessages() {
@@ -46,22 +51,36 @@ public abstract class ChatComponentMixin implements ChatView {
     @Shadow
     public abstract void resetChatScroll();
 
-    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
-            at = @At("HEAD"))
-    private void arcadiachat$beginAdd(Component content, MessageSignature signature, GuiMessageTag tag, CallbackInfo ci) {
-        arcadiachat$adding = TabState.isEnabled() ? TabState.takeCategory() : null;
+    /** Heure du message (en tete de ligne ou au survol). */
+    @ModifyVariable(method = ADD_MESSAGE, at = @At("HEAD"), argsOnly = true)
+    private Component arcadiachat$decorate(Component content) {
+        return TabState.decorate(content);
     }
 
-    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
-            at = @At("RETURN"))
+    /** Barre orange pour les messages qui mentionnent le joueur. */
+    @ModifyVariable(method = ADD_MESSAGE, at = @At("HEAD"), argsOnly = true)
+    private GuiMessageTag arcadiachat$mention(GuiMessageTag tag, Component content, MessageSignature signature,
+                                              GuiMessageTag original) {
+        return TabState.mentionTag(content, tag);
+    }
+
+    @Inject(method = ADD_MESSAGE, at = @At("HEAD"))
+    private void arcadiachat$beginAdd(Component content, MessageSignature signature, GuiMessageTag tag, CallbackInfo ci) {
+        arcadiachat$content = content;
+        arcadiachat$adding = TabState.currentMessage(content);
+    }
+
+    @Inject(method = ADD_MESSAGE, at = @At("RETURN"))
     private void arcadiachat$endAdd(Component content, MessageSignature signature, GuiMessageTag tag, CallbackInfo ci) {
         arcadiachat$adding = null;
+        arcadiachat$content = null;
+        TabState.endMessage();
     }
 
-    /** Pas de lignes a l'ecran pour un message d'un autre onglet. */
+    /** Pas de lignes a l'ecran pour un message d'un autre onglet (ou filtre). */
     @Inject(method = "addMessageToDisplayQueue", at = @At("HEAD"), cancellable = true)
     private void arcadiachat$filterDisplay(GuiMessage message, CallbackInfo ci) {
-        if (arcadiachat$adding != null && !TabState.shows(arcadiachat$adding)) {
+        if (arcadiachat$adding != null && !TabState.displays(arcadiachat$adding, message.content())) {
             ci.cancel();
         }
     }
@@ -71,7 +90,7 @@ public abstract class ChatComponentMixin implements ChatView {
     private void arcadiachat$record(GuiMessage message, CallbackInfo ci) {
         if (arcadiachat$adding != null) {
             TabState.record(message, arcadiachat$adding);
-            if (!TabState.shows(arcadiachat$adding)) {
+            if (!TabState.displays(arcadiachat$adding, message.content())) {
                 ci.cancel();
             }
         }

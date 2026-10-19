@@ -4,7 +4,8 @@
   "package": "com.arcadia.chat.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "ChatComponentMixin"
+    "ChatComponentMixin",
+    "ChatScreenAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -4,6 +4,7 @@ out/
 run/
 runs/
 runClient/
+runClient2/
 .idea/
 *.iml
 *.iws

@@ -6,8 +6,14 @@ public enum Category {
     REMOTE,
     /** Chat des joueurs de ce serveur, et messages venus du salon Discord de ce serveur. */
     LOCAL,
-    /** Messages prives (/msg, /tell, messages d'equipe). */
+    /** Messages prives (/msg, /tell, messages d'equipe) ; la cle est le correspondant. */
     PRIVATE,
+    /** Chat du staff et alertes. */
+    STAFF,
+    /** Canal thematique ; la cle est le nom du canal. */
+    CHANNEL,
     /** Tout le reste : annonces, reponses de commandes, messages des autres mods. */
-    SYSTEM
+    SYSTEM,
+    /** Message systeme masque par un filtre du joueur : garde dans aucun onglet. */
+    HIDDEN
 }

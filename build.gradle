@@ -39,6 +39,16 @@ neoForge {
             programArgument 'localhost:25565'
             gameDirectory = project.file('runClient')
         }
+
+        // Second joueur (Dev2), sur le second serveur de dev : conversations privees, frappe, liens entre serveurs.
+        client2 {
+            client()
+            programArgument '--username'
+            programArgument 'Dev2'
+            programArgument '--quickPlayMultiplayer'
+            programArgument 'localhost:25566'
+            gameDirectory = project.file('runClient2')
+        }
     }
 }
 
