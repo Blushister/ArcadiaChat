@@ -27,7 +27,11 @@ import net.minecraft.network.chat.MutableComponent;
 public final class ChannelsScreen extends Screen {
 
     private static final Pattern NAME = Pattern.compile("[a-z0-9_-]{2,24}");
-    private static final int ROWS = 7;
+    /** Nombre maximal de canaux par page ; moins si l'ecran manque de hauteur. */
+    private static final int MAX_ROWS = 7;
+    private static final int TOP = 40;
+    /** Hauteur de la section de gestion (titre et trois lignes de boutons). */
+    private static final int MANAGE_HEIGHT = 84;
     private static final int ROW_HEIGHT = 22;
     private static final int WIDTH = 320;
     /** Delai avant de relire la liste apres une action (le serveur repond en base, de facon asynchrone). */
@@ -43,6 +47,9 @@ public final class ChannelsScreen extends Screen {
     private String newNameText = "";
     private String playersText = "";
     private int refreshIn = -1;
+    /** Canaux par page et position de la section de gestion, calcules selon la taille de l'ecran. */
+    private int rows = MAX_ROWS;
+    private int manageTop;
 
     private EditBox newName;
     private EditBox players;
@@ -64,7 +71,7 @@ public final class ChannelsScreen extends Screen {
         if (selected != null && channels.stream().noneMatch(c -> c.name().equals(selected))) {
             selected = null;
         }
-        page = Math.min(page, Math.max(0, (channels.size() - 1) / ROWS));
+        page = Math.min(page, Math.max(0, (channels.size() - 1) / rows));
         rebuildWidgets();
     }
 
@@ -79,11 +86,16 @@ public final class ChannelsScreen extends Screen {
             ClientNetwork.requestChannels();
         }
         int left = width / 2 - WIDTH / 2;
-        int top = 36;
+        int top = TOP;
+        // La section de gestion est ancree en bas, au-dessus de "Termine" ; la liste prend la place restante.
+        manageTop = height - 30 - MANAGE_HEIGHT;
+        int listBottom = manager ? manageTop - 6 : height - 34;
+        rows = Math.max(1, Math.min(MAX_ROWS, (listBottom - top - ROW_HEIGHT) / ROW_HEIGHT));
+        page = Math.min(page, Math.max(0, (channels.size() - 1) / rows));
 
         // ---- liste des canaux, page par page
-        for (int i = 0; i < ROWS; i++) {
-            int index = page * ROWS + i;
+        for (int i = 0; i < rows; i++) {
+            int index = page * rows + i;
             if (index >= channels.size()) {
                 break;
             }
@@ -108,8 +120,8 @@ public final class ChannelsScreen extends Screen {
             }
             addRenderableWidget(action);
         }
-        int pages = Math.max(1, (channels.size() + ROWS - 1) / ROWS);
-        int pagerY = top + ROWS * ROW_HEIGHT;
+        int pages = Math.max(1, (channels.size() + rows - 1) / rows);
+        int pagerY = top + rows * ROW_HEIGHT;
         if (pages > 1) {
             Button previous = Button.builder(Component.literal("<"), b -> {
                 page--;
@@ -127,7 +139,7 @@ public final class ChannelsScreen extends Screen {
 
         // ---- gestion (staff)
         if (manager) {
-            int y = pagerY + 28;
+            int y = manageTop + 12;
             newName = new EditBox(font, left, y, 150, 20, Component.translatable("arcadiachat.channels.new_name"));
             newName.setHint(Component.translatable("arcadiachat.channels.new_name").withStyle(ChatFormatting.DARK_GRAY));
             newName.setMaxLength(24);
@@ -178,7 +190,7 @@ public final class ChannelsScreen extends Screen {
         }
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-                .bounds(width / 2 - 100, height - 28, 200, 20).build());
+                .bounds(width / 2 - 100, height - 26, 200, 20).build());
     }
 
     private Component rowLabel(TabsProtocol.ChannelEntry entry) {
@@ -237,20 +249,19 @@ public final class ChannelsScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(font, title, width / 2, 14, 0xFFFFFF);
+        graphics.drawCenteredString(font, title, width / 2, 10, 0xFFFFFF);
+        graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.feedback")
+                .withStyle(ChatFormatting.GRAY), width / 2, 24, 0xFFFFFF);
         int left = width / 2 - WIDTH / 2;
         if (!loaded) {
-            graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.loading"), width / 2, 40, 0xAAAAAA);
+            graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.loading"), width / 2, TOP + 6, 0xAAAAAA);
         } else if (channels.isEmpty()) {
-            graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.none"), width / 2, 40, 0xAAAAAA);
+            graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.none"), width / 2, TOP + 6, 0xAAAAAA);
         }
         if (manager) {
-            int y = 36 + ROWS * ROW_HEIGHT + 16;
             graphics.drawString(font, Component.translatable("arcadiachat.channels.manage")
-                    .withStyle(ChatFormatting.GOLD), left, y, 0xFFFFFF);
+                    .withStyle(ChatFormatting.GOLD), left, manageTop, 0xFFFFFF);
         }
-        graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.feedback")
-                .withStyle(ChatFormatting.DARK_GRAY), width / 2, height - 40, 0xFFFFFF);
     }
 
     @Override
