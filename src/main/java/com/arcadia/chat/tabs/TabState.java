@@ -43,8 +43,11 @@ public final class TabState {
     private record Entry(Category category, String key, GuiMessage message, String text) {
     }
 
-    /** Ou part ce que le joueur ecrit, selon l'onglet actif. */
-    public enum Target { GLOBAL, LOCAL, STAFF, CHANNEL, CONVERSATION }
+    /**
+     * Ou part ce que le joueur ecrit, selon l'onglet actif. NONE : nulle part (onglet Prive, qui regroupe
+     * toutes les conversations sans savoir a qui ecrire).
+     */
+    public enum Target { GLOBAL, LOCAL, STAFF, CHANNEL, CONVERSATION, NONE }
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
     private static final int MENTION_COLOR = 0xFFAA00;
@@ -422,6 +425,7 @@ public final class TabState {
             case STAFF -> Target.STAFF;
             case CHANNEL -> Target.CHANNEL;
             case CONVERSATION -> Target.CONVERSATION;
+            case PRIVATE -> Target.NONE;
             default -> crossServer && writesGlobal ? Target.GLOBAL : Target.LOCAL;
         };
     }
@@ -433,6 +437,7 @@ public final class TabState {
             case STAFF -> Component.translatable("arcadiachat.scope.staff");
             case CHANNEL -> Component.translatable("arcadiachat.scope.channel", active.key());
             case CONVERSATION -> Component.translatable("arcadiachat.scope.conversation", active.key());
+            case NONE -> Component.translatable("arcadiachat.scope.private");
         };
     }
 

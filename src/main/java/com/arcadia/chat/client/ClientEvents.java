@@ -6,6 +6,7 @@ import com.arcadia.chat.net.ClientNetwork;
 import com.arcadia.chat.net.TabsProtocol;
 import com.arcadia.chat.tabs.Category;
 import com.arcadia.chat.tabs.TabState;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -88,6 +89,12 @@ public final class ClientEvents {
                     connection.sendCommand("msg " + TabState.active().key() + " " + text);
                 }
                 event.setCanceled(true);
+            }
+            case NONE -> {
+                // Onglet Prive : rien ne doit partir dans le chat public.
+                event.setCanceled(true);
+                Minecraft.getInstance().gui.setOverlayMessage(
+                        Component.translatable("arcadiachat.private.hint").withStyle(ChatFormatting.YELLOW), false);
             }
             default -> {
             }

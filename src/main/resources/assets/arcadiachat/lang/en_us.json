@@ -10,6 +10,8 @@
   "arcadiachat.scope.staff": "→ staff",
   "arcadiachat.scope.channel": "→ #%s",
   "arcadiachat.scope.conversation": "→ @%s",
+  "arcadiachat.scope.private": "→ pick a conversation",
+  "arcadiachat.private.hint": "Write in an @player tab, or use /msg <player> <message>",
   "arcadiachat.typing.one": "%s is typing%s",
   "arcadiachat.typing.two": "%s and %s are typing%s",
   "arcadiachat.typing.three": "%s, %s and %s are typing%s",

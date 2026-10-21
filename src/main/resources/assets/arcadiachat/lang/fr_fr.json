@@ -10,6 +10,8 @@
   "arcadiachat.scope.staff": "→ staff",
   "arcadiachat.scope.channel": "→ #%s",
   "arcadiachat.scope.conversation": "→ @%s",
+  "arcadiachat.scope.private": "→ choisis une conversation",
+  "arcadiachat.private.hint": "Écris dans un onglet @pseudo, ou utilise /msg <joueur> <message>",
   "arcadiachat.typing.one": "%s écrit%s",
   "arcadiachat.typing.two": "%s et %s écrivent%s",
   "arcadiachat.typing.three": "%s, %s et %s écrivent%s",
