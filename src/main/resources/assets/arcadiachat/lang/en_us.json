@@ -23,6 +23,7 @@
   "arcadiachat.search.hint": "Search this tab…",
   "arcadiachat.join.title": "Join %s?",
   "arcadiachat.join.text": "You will leave this server and connect to %s.",
+
   "arcadiachat.channels.title": "Channels",
   "arcadiachat.channels.loading": "Loading…",
   "arcadiachat.channels.none": "No channel yet.",
@@ -42,6 +43,7 @@
   "arcadiachat.channels.delete_title": "Delete #%s?",
   "arcadiachat.channels.delete_text": "Its members will lose it on every server, with its history.",
   "arcadiachat.channels.feedback": "Server replies are shown in the chat.",
+
   "arcadiachat.menu.title": "Message",
   "arcadiachat.menu.private": "Private message",
   "arcadiachat.menu.mention": "Mention",
@@ -50,6 +52,7 @@
   "arcadiachat.menu.copy": "Copy message",
   "arcadiachat.menu.history": "History (staff)",
   "arcadiachat.menu.mute": "Mute… (staff)",
+
   "arcadiachat.configuration.title": "ArcadiaChat settings",
   "arcadiachat.configuration.tabs": "Tabs",
   "arcadiachat.configuration.order": "Tab order",

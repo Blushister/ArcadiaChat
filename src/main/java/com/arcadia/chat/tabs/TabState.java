@@ -358,9 +358,20 @@ public final class TabState {
         return out;
     }
 
+    /** Motif de mention en cache : il sert plusieurs fois par message. */
+    private static String mentionKey = "";
+    private static Pattern mentionCache;
 
     private static Pattern mentionPattern(String name) {
         String key = ChatConfig.MENTION_PLAIN_NAME.get() + "|" + name;
+        if (!key.equals(mentionKey)) {
+            mentionCache = buildMentionPattern(name);
+            mentionKey = key;
+        }
+        return mentionCache;
+    }
+
+    private static Pattern buildMentionPattern(String name) {
         return Pattern.compile((ChatConfig.MENTION_PLAIN_NAME.get() ? "(?<![\\w@])@?" : "@")
                 + Pattern.quote(name) + "(?!\\w)", Pattern.CASE_INSENSITIVE);
     }
