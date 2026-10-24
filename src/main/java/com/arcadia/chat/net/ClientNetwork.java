@@ -62,6 +62,7 @@ public final class ClientNetwork {
                 case TabsProtocol.CHANNEL_LOCAL, TabsProtocol.CHANNEL_DISCORD -> Category.LOCAL;
                 case TabsProtocol.CHANNEL_PRIVATE -> Category.PRIVATE;
                 case TabsProtocol.CHANNEL_STAFF, TabsProtocol.CHANNEL_ALERT -> Category.STAFF;
+                case TabsProtocol.CHANNEL_TEAM -> Category.TEAM;
                 default -> Category.SYSTEM;
             };
             if (category == Category.PRIVATE) {

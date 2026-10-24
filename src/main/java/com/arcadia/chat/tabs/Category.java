@@ -10,6 +10,8 @@ public enum Category {
     PRIVATE,
     /** Chat du staff et alertes. */
     STAFF,
+    /** Chat d'equipe (FTB Teams). */
+    TEAM,
     /** Canal thematique ; la cle est le nom du canal. */
     CHANNEL,
     /** Tout le reste : annonces, reponses de commandes, messages des autres mods. */

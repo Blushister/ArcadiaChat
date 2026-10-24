@@ -80,6 +80,10 @@ public final class ClientEvents {
                 ClientNetwork.sendTo(TabsProtocol.CHANNEL_STAFF, text);
                 event.setCanceled(true);
             }
+            case TEAM -> {
+                ClientNetwork.sendTo(TabsProtocol.CHANNEL_TEAM, text);
+                event.setCanceled(true);
+            }
             case CHANNEL -> {
                 ClientNetwork.sendTo(TabsProtocol.CHANNEL_PREFIX + TabState.active().key(), text);
                 event.setCanceled(true);

@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component;
 public record ChatTab(Kind kind, String key) {
 
     public enum Kind {
-        ALL("all"), GLOBAL("global"), SERVER("server"), PRIVATE("private"), STAFF("staff"), SYSTEM("system"),
+        ALL("all"), GLOBAL("global"), SERVER("server"), PRIVATE("private"), TEAM("team"), STAFF("staff"), SYSTEM("system"),
         CONVERSATION("conversation"), CHANNEL("channel");
 
         private final String id;
@@ -74,6 +74,7 @@ public record ChatTab(Kind kind, String key) {
             case SERVER -> category == Category.LOCAL;
             case PRIVATE -> category == Category.PRIVATE;
             case STAFF -> category == Category.STAFF;
+            case TEAM -> category == Category.TEAM;
             case SYSTEM -> category == Category.SYSTEM;
             case CONVERSATION -> category == Category.PRIVATE && key.equalsIgnoreCase(entryKey);
             case CHANNEL -> category == Category.CHANNEL && key.equalsIgnoreCase(entryKey);

@@ -30,13 +30,13 @@ public final class ChatConfig {
     public static final ModConfigSpec.ConfigValue<List<? extends String>> FILTERS;
 
     /** Onglets fixes, dans l'ordre par defaut. */
-    public static final List<String> DEFAULT_ORDER = List.of("all", "global", "server", "private", "staff", "system");
+    public static final List<String> DEFAULT_ORDER = List.of("all", "global", "server", "private", "team", "staff", "system");
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
 
         b.push("tabs");
-        TAB_ORDER = b.comment("Ordre des onglets : all, global, server, private, staff, system.",
+        TAB_ORDER = b.comment("Ordre des onglets : all, global, server, private, team, staff, system.",
                         "Les onglets des canaux et des conversations privees se placent a la suite.")
                 .defineListAllowEmpty("order", DEFAULT_ORDER, () -> "", o -> o instanceof String s && DEFAULT_ORDER.contains(s));
         HIDDEN_TABS = b.comment("Onglets a masquer (memes noms que ci-dessus). L'onglet \"all\" ne peut pas etre masque.")

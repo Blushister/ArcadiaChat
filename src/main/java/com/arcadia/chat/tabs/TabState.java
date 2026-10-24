@@ -51,7 +51,7 @@ public final class TabState {
      * Ou part ce que le joueur ecrit, selon l'onglet actif. NONE : nulle part (onglet Prive, qui regroupe
      * toutes les conversations sans savoir a qui ecrire).
      */
-    public enum Target { GLOBAL, LOCAL, STAFF, CHANNEL, CONVERSATION, NONE }
+    public enum Target { GLOBAL, LOCAL, STAFF, TEAM, CHANNEL, CONVERSATION, NONE }
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
     private static final int MENTION_COLOR = 0xFFAA00;
@@ -64,6 +64,8 @@ public final class TabState {
     private static boolean crossServer;
     private static boolean staff;
     private static boolean typingEnabled;
+    /** Le serveur propose le chat d'equipe (FTB Teams). */
+    private static boolean team;
     private static final Map<String, TabsProtocol.ServerInfo> servers = new HashMap<>();
     private static final List<String> channels = new ArrayList<>();
     private static final Set<String> conversations = new LinkedHashSet<>();
@@ -108,6 +110,7 @@ public final class TabState {
         crossServer = hello.crossServer();
         staff = hello.staff();
         typingEnabled = hello.typing();
+        team = hello.team();
         writesGlobal = hello.writesGlobal();
         if (first) {
             // Les messages deja affiches (arrivee sur le serveur...) sont repris dans l'historique.
@@ -378,7 +381,8 @@ public final class TabState {
         for (String id : order) {
             ChatTab.Kind kind = ChatTab.Kind.byId(id);
             if (kind == null || (kind != ChatTab.Kind.ALL && hidden.contains(id))
-                    || (kind == ChatTab.Kind.GLOBAL && !crossServer) || (kind == ChatTab.Kind.STAFF && !staff)) {
+                    || (kind == ChatTab.Kind.GLOBAL && !crossServer) || (kind == ChatTab.Kind.STAFF && !staff)
+                    || (kind == ChatTab.Kind.TEAM && !team)) {
                 continue;
             }
             tabs.add(ChatTab.fixed(kind));
@@ -447,6 +451,7 @@ public final class TabState {
     public static Target target() {
         return switch (active.kind()) {
             case STAFF -> Target.STAFF;
+            case TEAM -> Target.TEAM;
             case CHANNEL -> Target.CHANNEL;
             case CONVERSATION -> Target.CONVERSATION;
             case PRIVATE -> Target.NONE;
@@ -459,6 +464,7 @@ public final class TabState {
             case GLOBAL -> Component.translatable("arcadiachat.scope.global");
             case LOCAL -> Component.translatable("arcadiachat.scope.local", serverName);
             case STAFF -> Component.translatable("arcadiachat.scope.staff");
+            case TEAM -> Component.translatable("arcadiachat.scope.team");
             case CHANNEL -> Component.translatable("arcadiachat.scope.channel", active.key());
             case CONVERSATION -> Component.translatable("arcadiachat.scope.conversation", active.key());
             case NONE -> Component.translatable("arcadiachat.scope.private");
