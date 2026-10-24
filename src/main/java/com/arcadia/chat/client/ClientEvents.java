@@ -151,6 +151,11 @@ public final class ClientEvents {
             stopTyping();
         }
     }
+
+    /** Bulles de chat au-dessus des joueurs proches. */
+    @SubscribeEvent
+    public static void onNameTag(RenderNameTagEvent event) {
+        ChatBubbles.render(event);
     }
 
     /** "... ecrit" sous les messages du chat, chat ouvert ou ferme. */

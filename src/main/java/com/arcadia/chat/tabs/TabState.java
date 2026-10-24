@@ -569,6 +569,11 @@ public final class TabState {
             typing.remove(name);
         }
     }
+
+    /** Joueur de ce serveur en train d'ecrire (pour la bulle au-dessus de sa tete). */
+    public static boolean isTypingHere(String name) {
+        Typing state = typing.get(name);
+        return enabled && state != null && !state.remote() && state.until() >= System.currentTimeMillis();
     }
 
     public static boolean typingEnabled() {

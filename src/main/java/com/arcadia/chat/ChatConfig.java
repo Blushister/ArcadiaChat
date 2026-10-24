@@ -23,6 +23,8 @@ public final class ChatConfig {
     public static final ModConfigSpec.BooleanValue TIMESTAMPS;
     public static final ModConfigSpec.BooleanValue TIMESTAMP_HOVER;
 
+    public static final ModConfigSpec.BooleanValue BUBBLES;
+    public static final ModConfigSpec.IntValue BUBBLE_DISTANCE;
 
     public static final ModConfigSpec.BooleanValue SHOW_TYPING;
     public static final ModConfigSpec.BooleanValue SEND_TYPING;
@@ -67,6 +69,11 @@ public final class ChatConfig {
                 .define("timestampHover", true);
         b.pop();
 
+        b.push("bubbles");
+        BUBBLES = b.comment("Afficher une petite bulle au-dessus de la tete des joueurs proches quand ils ecrivent dans le chat.")
+                .define("visible", true);
+        BUBBLE_DISTANCE = b.comment("Distance maximale d'affichage des bulles, en blocs.")
+                .defineInRange("distance", 24, 4, 64);
         b.pop();
 
         b.push("typing");
