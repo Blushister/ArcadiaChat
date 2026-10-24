@@ -30,6 +30,11 @@ public final class ClientNetwork {
                 screen.refreshSoon();
             }
         });
+        registrar.playToClient(TabsProtocol.Reaction.TYPE, TabsProtocol.Reaction.STREAM_CODEC,
+                (payload, context) -> TabState.onReaction(payload.key(), payload.emoji(), payload.reactor(), payload.add()));
+        registrar.playToServer(TabsProtocol.React.TYPE, TabsProtocol.React.STREAM_CODEC, (payload, context) -> { });
+        registrar.playToClient(TabsProtocol.RemotePlayers.TYPE, TabsProtocol.RemotePlayers.STREAM_CODEC,
+                (payload, context) -> TabState.updateRemotePlayers(payload.names()));
         registrar.playToClient(TabsProtocol.ChannelDirectory.TYPE, TabsProtocol.ChannelDirectory.STREAM_CODEC,
                 (payload, context) -> {
                     ChannelsScreen screen = ChannelsScreen.current();
@@ -103,6 +108,15 @@ public final class ClientNetwork {
         return connection != null && connection.hasChannel(TabsProtocol.ChannelsRequest.TYPE);
     }
 
+    /** Reagit a un message (ou retire sa reaction). */
+    public static void sendReaction(String key, String emoji, boolean add) {
+        send(new TabsProtocol.React(key, emoji, add));
+    }
+
+    public static boolean supportsReactions() {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        return connection != null && connection.hasChannel(TabsProtocol.React.TYPE);
+    }
 
     public static void sendTyping(boolean typing) {
         send(new TabsProtocol.Typing(typing));

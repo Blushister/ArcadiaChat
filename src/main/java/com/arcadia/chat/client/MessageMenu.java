@@ -34,11 +34,30 @@ public final class MessageMenu {
     private record Item(Component label, Runnable action) {
     }
 
+    private static List<Item> items = List.of();
+    /** Empreinte du message pour les reactions, ou null (pas de rangee de reactions). */
+    private static String reactionKey;
+    private static final int CELL = 18;
+    private static Component title;
+    private static int x;
+    private static int y;
+    private static int width;
+
     private MessageMenu() {
     }
 
     public static boolean isOpen() {
         return !items.isEmpty();
+    }
+
+    public static void close() {
+        items = List.of();
+        reactionKey = null;
+    }
+
+    /** Lignes au-dessus des actions : le titre, puis la rangee de reactions s'il y en a une. */
+    private static int headerLines() {
+        return reactionKey == null ? 1 : 2;
     }
 
     /**
@@ -88,6 +107,91 @@ public final class MessageMenu {
                 screen.setFocused(input);
             }));
         }
+
+        Font font = mc.font;
+        reactionKey = meta != null && meta.key() != null && ClientNetwork.supportsReactions() ? meta.key() : null;
+        title = other ? Component.literal(sender) : Component.translatable("arcadiachat.menu.title");
+        int w = Math.max(font.width(title), reactionKey == null ? 0 : Reactions.EMOJIS.size() * CELL);
+        for (Item item : list) {
+            w = Math.max(w, font.width(item.label()));
+        }
+        width = w + PADDING * 2;
+        int height = (list.size() + headerLines()) * ITEM_HEIGHT + PADDING;
+        // Le menu reste dans l'ecran.
+        x = (int) Math.min(mouseX, screen.width - width - 2);
+        y = (int) Math.max(2, Math.min(mouseY - height, screen.height - height - 2));
+        items = list;
+        return true;
+    }
+
+    public static void render(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (items.isEmpty()) {
+            return;
+        }
+        Font font = Minecraft.getInstance().font;
+        int height = (items.size() + headerLines()) * ITEM_HEIGHT + PADDING;
+        graphics.pose().pushPose();
+        graphics.pose().translate(0, 0, 400);
+        graphics.fill(x - 1, y - 1, x + width + 1, y + height + 1, BORDER);
+        graphics.fill(x, y, x + width, y + height, BACKGROUND);
+        graphics.drawString(font, title, x + PADDING, y + 3, TITLE, false);
+        if (reactionKey != null) {
+            String self = selfName();
+            int rowTop = y + ITEM_HEIGHT + 2;
+            for (int i = 0; i < Reactions.EMOJIS.size(); i++) {
+                String emoji = Reactions.EMOJIS.get(i);
+                int cellX = x + PADDING + i * CELL;
+                boolean hover = mouseX >= cellX && mouseX < cellX + CELL && mouseY >= rowTop && mouseY < rowTop + ITEM_HEIGHT;
+                if (hover || Reactions.hasReacted(reactionKey, emoji, self)) {
+                    graphics.fill(cellX, rowTop, cellX + CELL - 2, rowTop + ITEM_HEIGHT, hover ? HOVER : 0xFF2A4A2A);
+                }
+                graphics.drawString(font, Reactions.glyph(emoji), cellX + 3, rowTop + 2, TEXT, false);
+            }
+        }
+        for (int i = 0; i < items.size(); i++) {
+            int top = y + (i + headerLines()) * ITEM_HEIGHT + 2;
+            if (mouseX >= x && mouseX < x + width && mouseY >= top && mouseY < top + ITEM_HEIGHT) {
+                graphics.fill(x, top, x + width, top + ITEM_HEIGHT, HOVER);
+            }
+            graphics.drawString(font, items.get(i).label(), x + PADDING, top + 2, TEXT, false);
+        }
+        graphics.pose().popPose();
+    }
+
+    /**
+     * Clic quand le menu est ouvert : lance l'action touchee, et ferme le menu dans tous les cas.
+     *
+     * @return true : le clic est consomme
+     */
+    public static boolean click(double mouseX, double mouseY) {
+        if (items.isEmpty()) {
+            return false;
+        }
+        List<Item> current = items;
+        String key = reactionKey;
+        int header = headerLines();
+        close();
+        if (key != null) {
+            int rowTop = y + ITEM_HEIGHT + 2;
+            if (mouseY >= rowTop && mouseY < rowTop + ITEM_HEIGHT && mouseX >= x + PADDING) {
+                int cell = (int) ((mouseX - x - PADDING) / CELL);
+                if (cell >= 0 && cell < Reactions.EMOJIS.size()) {
+                    String emoji = Reactions.EMOJIS.get(cell);
+                    // Deja mise : un nouveau clic la retire.
+                    ClientNetwork.sendReaction(key, emoji, !Reactions.hasReacted(key, emoji, selfName()));
+                }
+                return true;
+            }
+        }
+        for (int i = 0; i < current.size(); i++) {
+            int top = y + (i + header) * ITEM_HEIGHT + 2;
+            if (mouseX >= x && mouseX < x + width && mouseY >= top && mouseY < top + ITEM_HEIGHT) {
+                current.get(i).action().run();
+                break;
+            }
+        }
+        return true;
+    }
 
     private static String selfName() {
         var player = Minecraft.getInstance().player;

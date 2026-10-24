@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.arcadia.chat.ChatConfig;
+import com.arcadia.chat.client.Reactions;
 import com.arcadia.chat.net.ClientNetwork;
 import com.arcadia.chat.net.TabsProtocol;
 import com.google.common.collect.MapMaker;
@@ -39,6 +40,13 @@ public final class TabState {
     /** Ce qu'on sait du message que le chat est en train d'ajouter. */
     public record Incoming(Category category, String key, String sender, String origin) {
         static final Incoming UNKNOWN = new Incoming(Category.SYSTEM, "", "", "");
+    }
+
+    /**
+     * Ce qu'on garde d'un message affiche : qui l'a ecrit, depuis quel serveur, son empreinte (reactions) et son
+     * texte d'origine (avant l'ajout des reactions).
+     */
+    public record Meta(String sender, String origin, String key, Component original) {
     }
 
     /** Par message affiche (cle faible : un message oublie du chat disparait aussi d'ici). */
@@ -156,6 +164,8 @@ public final class TabState {
 
     public static void disable() {
         enabled = false;
+        Reactions.clear();
+        remotePlayers = List.of();
         history.clear();
         unread.clear();
         mentioned.clear();
@@ -233,6 +243,8 @@ public final class TabState {
         if (!enabled || in.category() == Category.HIDDEN) {
             return;
         }
+        META.put(message, new Meta(in.sender(), in.origin(), Reactions.keyOf(in.sender(), message.content().getString()),
+                message.content()));
         history.addFirst(new Entry(in.category(), in.key(), message, lower(message.content())));
         int max = ChatConfig.HISTORY.get();
         while (history.size() > max) {
@@ -487,6 +499,35 @@ public final class TabState {
 
     // ================================================================ serveurs
 
+    /** Reaction recue (de ce serveur ou d'un autre) : les messages concernes affichent le nouveau compte. */
+    public static void onReaction(String key, String emoji, String reactor, boolean add) {
+        if (!enabled || !Reactions.apply(key, emoji, reactor, add)) {
+            return;
+        }
+        Deque<Entry> updated = new ArrayDeque<>(history.size());
+        boolean touched = false;
+        boolean visible = false;
+        for (Entry entry : history) {
+            Meta meta = META.get(entry.message());
+            if (meta != null && key.equals(meta.key())) {
+                GuiMessage fresh = Reactions.withContent(entry.message(), Reactions.decorate(meta.original(), key));
+                META.put(fresh, meta);
+                updated.addLast(new Entry(entry.category(), entry.key(), fresh, entry.text()));
+                touched = true;
+                visible |= active.accepts(entry.category(), entry.key()) && matchesSearch(entry.text());
+            } else {
+                updated.addLast(entry);
+            }
+        }
+        if (touched) {
+            history.clear();
+            history.addAll(updated);
+            // Le chat n'est recompose que si le message est dans l'onglet affiche.
+            if (visible) {
+                refresh();
+            }
+        }
+    }
 
     public static Meta metaOf(GuiMessage message) {
         return message == null ? null : META.get(message);
