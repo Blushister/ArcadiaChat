@@ -12,4 +12,7 @@ public interface ChatView {
 
     /** Messages actuellement affiches, du plus recent au plus ancien. */
     List<GuiMessage> arcadiachat$shown();
+
+    /** Message affiche sous la souris (chat ouvert), ou null. */
+    GuiMessage arcadiachat$messageAt(double mouseX, double mouseY);
 }

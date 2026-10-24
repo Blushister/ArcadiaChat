@@ -22,6 +22,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.event.RenderNameTagEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.lwjgl.glfw.GLFW;
@@ -55,13 +56,13 @@ public final class ClientEvents {
         }
         ChatType.Bound bound = event.getBoundChatType();
         if (bound == null) {
-            TabState.expect(Category.SYSTEM, "");
+            TabState.expect(Category.SYSTEM, "", "");
         } else if (bound.chatType().is(ChatType.MSG_COMMAND_INCOMING) || bound.chatType().is(ChatType.TEAM_MSG_COMMAND_INCOMING)) {
-            TabState.expect(Category.PRIVATE, bound.name().getString());
+            TabState.expect(Category.PRIVATE, bound.name().getString(), bound.name().getString());
         } else if (bound.chatType().is(ChatType.MSG_COMMAND_OUTGOING) || bound.chatType().is(ChatType.TEAM_MSG_COMMAND_OUTGOING)) {
-            TabState.expect(Category.PRIVATE, bound.targetName().map(Component::getString).orElse(""));
+            TabState.expect(Category.PRIVATE, bound.targetName().map(Component::getString).orElse(""), "");
         } else {
-            TabState.expect(Category.LOCAL, "");
+            TabState.expect(Category.LOCAL, "", bound.name().getString());
         }
     }
 
@@ -141,9 +142,11 @@ public final class ClientEvents {
     @SubscribeEvent
     public static void onScreenClosing(ScreenEvent.Closing event) {
         if (event.getScreen() instanceof ChatScreen) {
+            MessageMenu.close();
             closeSearch(null);
             stopTyping();
         }
+    }
     }
 
     /** "... ecrit" sous les messages du chat, chat ouvert ou ferme. */
@@ -158,13 +161,24 @@ public final class ClientEvents {
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (event.getScreen() instanceof ChatScreen screen && TabState.isEnabled()) {
             TabBar.render(event.getGuiGraphics(), screen.width, screen.height, event.getMouseX(), event.getMouseY());
+            MessageMenu.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY());
         }
     }
 
     @SubscribeEvent
     public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
-        if (event.getScreen() instanceof ChatScreen && TabState.isEnabled() && (event.getButton() == 0 || event.getButton() == 1)
+        if (!(event.getScreen() instanceof ChatScreen screen) || !TabState.isEnabled()) {
+            return;
+        }
+        // Menu ouvert : le clic le ferme (et lance l'action touchee).
+        if (MessageMenu.click(event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
+        if ((event.getButton() == 0 || event.getButton() == 1)
                 && TabBar.click(event.getMouseX(), event.getMouseY(), event.getButton())) {
+            event.setCanceled(true);
+        } else if (event.getButton() == 1 && MessageMenu.open(screen, event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
         }
     }
@@ -179,6 +193,11 @@ public final class ClientEvents {
             return;
         }
         int key = event.getKeyCode();
+        if (key == GLFW.GLFW_KEY_ESCAPE && MessageMenu.isOpen()) {
+            MessageMenu.close();
+            event.setCanceled(true);
+            return;
+        }
         if (key == GLFW.GLFW_KEY_TAB && Screen.hasControlDown()) {
             TabState.cycle(Screen.hasShiftDown() ? -1 : 1);
             event.setCanceled(true);

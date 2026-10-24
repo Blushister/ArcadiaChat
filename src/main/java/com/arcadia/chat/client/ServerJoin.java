@@ -37,7 +37,7 @@ public final class ServerJoin {
                                 }))));
     }
 
-    private static void confirm(String id) {
+    public static void confirm(String id) {
         Minecraft mc = Minecraft.getInstance();
         if (!TabState.isJoinable(id)) {
             return;

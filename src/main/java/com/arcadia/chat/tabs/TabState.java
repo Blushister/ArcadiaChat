@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import com.arcadia.chat.ChatConfig;
 import com.arcadia.chat.net.ClientNetwork;
 import com.arcadia.chat.net.TabsProtocol;
+import com.google.common.collect.MapMaker;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.GuiMessage;
 import net.minecraft.client.GuiMessageTag;
@@ -36,9 +37,12 @@ import net.minecraft.sounds.SoundEvents;
 public final class TabState {
 
     /** Ce qu'on sait du message que le chat est en train d'ajouter. */
-    public record Incoming(Category category, String key) {
-        static final Incoming UNKNOWN = new Incoming(Category.SYSTEM, "");
+    public record Incoming(Category category, String key, String sender, String origin) {
+        static final Incoming UNKNOWN = new Incoming(Category.SYSTEM, "", "", "");
     }
+
+    /** Par message affiche (cle faible : un message oublie du chat disparait aussi d'ici). */
+    private static final Map<GuiMessage, Meta> META = new MapMaker().weakKeys().makeMap();
 
     private record Entry(Category category, String key, GuiMessage message, String text) {
     }
@@ -63,6 +67,8 @@ public final class TabState {
     private static final Map<String, TabsProtocol.ServerInfo> servers = new HashMap<>();
     private static final List<String> channels = new ArrayList<>();
     private static final Set<String> conversations = new LinkedHashSet<>();
+    /** Joueurs connectes aux autres serveurs (completion des pseudos). */
+    private static List<String> remotePlayers = List.of();
 
     // ---------------------------------------------------------------- onglets
     private static ChatTab active = ChatTab.ALL;
@@ -137,6 +143,14 @@ public final class TabState {
         }
     }
 
+    public static void updateRemotePlayers(List<String> names) {
+        remotePlayers = List.copyOf(names);
+    }
+
+    public static List<String> remotePlayers() {
+        return enabled ? remotePlayers : List.of();
+    }
+
     public static void disable() {
         enabled = false;
         history.clear();
@@ -163,17 +177,17 @@ public final class TabState {
 
     // ================================================================ messages
 
-    /** Fixe la categorie du message que le chat va recevoir juste apres. */
-    public static void expect(Category category, String key) {
-        pending = forced != null ? forced : new Incoming(category, key == null ? "" : key);
+    /** Fixe la categorie (et l'auteur, s'il est connu) du message que le chat va recevoir juste apres. */
+    public static void expect(Category category, String key, String sender) {
+        pending = forced != null ? forced : new Incoming(category, key == null ? "" : key, sender == null ? "" : sender, "");
     }
 
     /**
      * Ligne etiquetee par le serveur : elle passe par le circuit normal des messages (pour que les autres mods
      * de chat la traitent comme d'habitude), avec la categorie donnee par le serveur.
      */
-    public static void receiveTagged(Category category, String key, Runnable delivery) {
-        forced = new Incoming(category, key == null ? "" : key);
+    public static void receiveTagged(Category category, String key, String sender, String origin, Runnable delivery) {
+        forced = new Incoming(category, key == null ? "" : key, sender == null ? "" : sender, origin == null ? "" : origin);
         pending = forced;
         try {
             delivery.run();
@@ -191,7 +205,7 @@ public final class TabState {
     public static Incoming currentMessage(Component content) {
         Incoming in = enabled && pending != null ? pending : Incoming.UNKNOWN;
         if (in.category() == Category.SYSTEM && isFiltered(content)) {
-            return new Incoming(Category.HIDDEN, "");
+            return new Incoming(Category.HIDDEN, "", "", "");
         }
         return in;
     }
@@ -277,13 +291,21 @@ public final class TabState {
         return new GuiMessageTag(MENTION_COLOR, null, Component.translatable("arcadiachat.mention"), "Mention");
     }
 
-    /** Heure du message (en tete de ligne en option, et au survol) ; mention du joueur mise en valeur. */
+    /**
+     * Heure du message (en tete de ligne en option, et au survol, avec le serveur d'origine s'il vient d'ailleurs) ;
+     * mention du joueur mise en valeur.
+     */
     public static Component decorate(Component content) {
         String time = LocalTime.now().format(CLOCK);
-        Component result = isMention(content, currentMessage(content)) ? highlightMention(content) : content;
+        Incoming in = currentMessage(content);
+        Component result = isMention(content, in) ? highlightMention(content) : content;
         if (ChatConfig.TIMESTAMP_HOVER.get() && result.getStyle().getHoverEvent() == null) {
-            result = result.copy().withStyle(style -> style.withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(time).withStyle(ChatFormatting.GRAY))));
+            MutableComponent hover = Component.literal(time).withStyle(ChatFormatting.GRAY);
+            TabsProtocol.ServerInfo origin = in.origin().isEmpty() || in.origin().equals(serverId) ? null : servers.get(in.origin());
+            if (origin != null) {
+                hover.append(Component.literal(" \u00b7 " + origin.name()).withStyle(ChatFormatting.AQUA));
+            }
+            result = result.copy().withStyle(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover)));
         }
         if (ChatConfig.TIMESTAMPS.get()) {
             MutableComponent stamped = Component.literal("[" + time + "] ").withStyle(ChatFormatting.DARK_GRAY);
@@ -321,7 +343,9 @@ public final class TabState {
         return out;
     }
 
+
     private static Pattern mentionPattern(String name) {
+        String key = ChatConfig.MENTION_PLAIN_NAME.get() + "|" + name;
         return Pattern.compile((ChatConfig.MENTION_PLAIN_NAME.get() ? "(?<![\\w@])@?" : "@")
                 + Pattern.quote(name) + "(?!\\w)", Pattern.CASE_INSENSITIVE);
     }
@@ -457,6 +481,28 @@ public final class TabState {
 
     // ================================================================ serveurs
 
+
+    public static Meta metaOf(GuiMessage message) {
+        return message == null ? null : META.get(message);
+    }
+
+    public static boolean isStaff() {
+        return staff;
+    }
+
+    /** Ouvre (ou rouvre) la conversation privee avec un joueur, et l'affiche. */
+    public static void openConversation(String partner) {
+        if (!enabled || partner.isBlank()) {
+            return;
+        }
+        String existing = conversations.stream().filter(p -> p.equalsIgnoreCase(partner)).findFirst().orElse(null);
+        if (existing == null) {
+            conversations.add(partner);
+            existing = partner;
+        }
+        select(ChatTab.conversation(existing));
+    }
+
     public static TabsProtocol.ServerInfo server(String id) {
         return servers.get(id);
     }
@@ -475,6 +521,7 @@ public final class TabState {
         } else {
             typing.remove(name);
         }
+    }
     }
 
     public static boolean typingEnabled() {

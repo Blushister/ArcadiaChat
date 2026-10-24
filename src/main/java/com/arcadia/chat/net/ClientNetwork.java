@@ -3,12 +3,8 @@ package com.arcadia.chat.net;
 import com.arcadia.chat.client.ChannelsScreen;
 import com.arcadia.chat.tabs.Category;
 import com.arcadia.chat.tabs.TabState;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -72,23 +68,10 @@ public final class ClientNetwork {
                 key = line.origin();
             }
         }
-        Component message = withJoinLink(line.message(), category, line.origin());
         // Comme un message systeme recu du serveur : les autres mods de chat (tetes, filtres...) le voient passer.
-        TabState.receiveTagged(category, key,
-                () -> Minecraft.getInstance().getChatListener().handleSystemMessage(message, false));
-    }
-
-    /** Message venu d'un autre serveur : le survoler indique d'ou il vient, cliquer propose de le rejoindre. */
-    private static Component withJoinLink(Component message, Category category, String origin) {
-        if (category == Category.PRIVATE || category == Category.LOCAL || !TabState.isJoinable(origin)) {
-            return message;
-        }
-        TabsProtocol.ServerInfo server = TabState.server(origin);
-        Component hover = Component.translatable("arcadiachat.join.hover", server.name())
-                .withStyle(ChatFormatting.GRAY);
-        return Component.empty().append(message).withStyle(style -> style
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/arcadiachat join " + origin)));
+        // Auteur et serveur d'origine servent au survol (heure, serveur) et au menu du clic droit.
+        TabState.receiveTagged(category, key, line.sender(), line.origin(),
+                () -> Minecraft.getInstance().getChatListener().handleSystemMessage(line.message(), false));
     }
 
     // ---------------------------------------------------------------- vers le serveur
@@ -118,6 +101,7 @@ public final class ClientNetwork {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         return connection != null && connection.hasChannel(TabsProtocol.ChannelsRequest.TYPE);
     }
+
 
     public static void sendTyping(boolean typing) {
         send(new TabsProtocol.Typing(typing));

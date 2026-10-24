@@ -1,8 +1,10 @@
 package com.arcadia.chat.mixin;
 
 import java.util.List;
+import java.util.Map;
 
 import com.arcadia.chat.tabs.ChatView;
+import com.google.common.collect.MapMaker;
 import com.arcadia.chat.tabs.TabState;
 import net.minecraft.client.GuiMessage;
 import net.minecraft.client.GuiMessageTag;
@@ -15,6 +17,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -37,6 +40,16 @@ public abstract class ChatComponentMixin implements ChatView {
     @Final
     private List<GuiMessage> allMessages;
 
+    @Shadow
+    @Final
+    private List<GuiMessage.Line> trimmedMessages;
+
+    /** Pour chaque ligne affichee, le message dont elle fait partie (un long message tient sur plusieurs lignes). */
+    @Unique
+    private final Map<GuiMessage.Line, GuiMessage> arcadiachat$lineOwners = new MapMaker().weakKeys().makeMap();
+    @Unique
+    private GuiMessage arcadiachat$displaying;
+
     /** Message en cours d'ajout ; null en dehors d'un ajout (reaffichage, redimensionnement...). */
     @Unique
     private TabState.Incoming arcadiachat$adding;
@@ -50,6 +63,35 @@ public abstract class ChatComponentMixin implements ChatView {
 
     @Shadow
     public abstract void resetChatScroll();
+
+    @Shadow
+    private int getMessageLineIndexAt(double mouseX, double mouseY) {
+        throw new AssertionError("mixin");
+    }
+
+    @Shadow
+    private double screenToChatX(double x) {
+        throw new AssertionError("mixin");
+    }
+
+    @Shadow
+    private double screenToChatY(double y) {
+        throw new AssertionError("mixin");
+    }
+
+    @Inject(method = "addMessageToDisplayQueue", at = @At("HEAD"))
+    private void arcadiachat$beginLines(GuiMessage message, CallbackInfo ci) {
+        arcadiachat$displaying = message;
+    }
+
+    @ModifyArg(method = "addMessageToDisplayQueue",
+            at = @At(value = "INVOKE", target = "Ljava/util/List;add(ILjava/lang/Object;)V"), index = 1)
+    private Object arcadiachat$ownLine(Object line) {
+        if (arcadiachat$displaying != null && line instanceof GuiMessage.Line l) {
+            arcadiachat$lineOwners.put(l, arcadiachat$displaying);
+        }
+        return line;
+    }
 
     /** Heure du message (en tete de ligne ou au survol). */
     @ModifyVariable(method = ADD_MESSAGE, at = @At("HEAD"), argsOnly = true)
@@ -112,5 +154,15 @@ public abstract class ChatComponentMixin implements ChatView {
     @Override
     public List<GuiMessage> arcadiachat$shown() {
         return allMessages;
+    }
+
+    @Override
+    public GuiMessage arcadiachat$messageAt(double mouseX, double mouseY) {
+        // Meme conversion que Minecraft : la recherche de ligne attend des coordonnees dans le repere du chat.
+        int index = getMessageLineIndexAt(screenToChatX(mouseX), screenToChatY(mouseY));
+        if (index < 0 || index >= trimmedMessages.size()) {
+            return null;
+        }
+        return arcadiachat$lineOwners.get(trimmedMessages.get(index));
     }
 }

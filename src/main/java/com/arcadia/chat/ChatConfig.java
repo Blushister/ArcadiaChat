@@ -23,6 +23,7 @@ public final class ChatConfig {
     public static final ModConfigSpec.BooleanValue TIMESTAMPS;
     public static final ModConfigSpec.BooleanValue TIMESTAMP_HOVER;
 
+
     public static final ModConfigSpec.BooleanValue SHOW_TYPING;
     public static final ModConfigSpec.BooleanValue SEND_TYPING;
 
@@ -64,6 +65,8 @@ public final class ChatConfig {
                 .define("timestamps", false);
         TIMESTAMP_HOVER = b.comment("Afficher l'heure d'un message en le survolant.")
                 .define("timestampHover", true);
+        b.pop();
+
         b.pop();
 
         b.push("typing");
