@@ -24,6 +24,9 @@ public final class ChatConfig {
     public static final ModConfigSpec.BooleanValue TIMESTAMP_HOVER;
     public static final ModConfigSpec.BooleanValue HEADS;
 
+    public static final ModConfigSpec.BooleanValue UNSIGNED_CHAT;
+    public static final ModConfigSpec.BooleanValue HIDE_UNSECURE_WARNING;
+
     public static final ModConfigSpec.BooleanValue BUBBLES;
     public static final ModConfigSpec.IntValue BUBBLE_DISTANCE;
 
@@ -71,6 +74,13 @@ public final class ChatConfig {
                 .define("timestampHover", true);
         HEADS = b.comment("Afficher la tete du joueur devant ses messages.")
                 .define("heads", true);
+
+        b.push("privacy");
+        UNSIGNED_CHAT = b.comment("Ne pas signer tes messages quand le serveur ne l'exige pas : ils ne peuvent alors pas",
+                        "etre signales a Mojang. Sur un serveur qui exige la signature, rien ne change.")
+                .define("unsignedChat", true);
+        HIDE_UNSECURE_WARNING = b.comment("Ne pas afficher l'avertissement \"Le chat ne peut pas etre verifie\" a la connexion.")
+                .define("hideUnsecureWarning", true);
         b.pop();
 
         b.push("bubbles");
