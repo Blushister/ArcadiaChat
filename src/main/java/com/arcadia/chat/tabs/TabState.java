@@ -265,6 +265,7 @@ public final class TabState {
             }
         }
     }
+    }
 
     public static void clearHistory() {
         history.clear();

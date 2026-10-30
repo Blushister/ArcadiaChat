@@ -44,6 +44,8 @@ public final class TabBar {
     private static int gearX = -1;
     /** Bouton "#" (ecran Canaux), juste apres la roue dentee ; -1 si le serveur ne le gere pas. */
     private static int channelsX = -1;
+    /** Bouton du panel staff, a la suite ; -1 s'il n'est pas propose. */
+    private static int panelX = -1;
 
     private static final List<Slot> slots = new ArrayList<>();
     private static int top;
@@ -97,6 +99,15 @@ public final class TabBar {
                     channelsHover ? TEXT_ACTIVE : TEXT_MENTION);
             x += GEAR_WIDTH + GAP;
         }
+        panelX = -1;
+        if (TabState.isStaff() && ClientNetwork.supportsPanel()) {
+            panelX = x;
+            boolean panelHover = contains(panelX, GEAR_WIDTH, mouseX, mouseY);
+            graphics.fill(panelX, top, panelX + GEAR_WIDTH, top + HEIGHT, panelHover ? BG_HOVER : BG_IDLE);
+            graphics.drawCenteredString(font, "⚑", panelX + GEAR_WIDTH / 2 + 1, top + 2,
+                    panelHover ? TEXT_ACTIVE : TEXT_MENTION);
+            x += GEAR_WIDTH + GAP;
+        }
         int end = x;
         limit = screenWidth - 2;
 
@@ -123,6 +134,11 @@ public final class TabBar {
         if (channelsX >= 0 && button == 0 && contains(channelsX, GEAR_WIDTH, mouseX, mouseY)) {
             Minecraft mc = Minecraft.getInstance();
             mc.setScreen(new ChannelsScreen(mc.screen));
+            return true;
+        }
+        if (panelX >= 0 && button == 0 && contains(panelX, GEAR_WIDTH, mouseX, mouseY)) {
+            Minecraft mc = Minecraft.getInstance();
+            mc.setScreen(new StaffPanelScreen(mc.screen));
             return true;
         }
         for (Slot slot : slots) {

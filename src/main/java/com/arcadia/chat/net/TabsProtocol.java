@@ -284,4 +284,59 @@ public final class TabsProtocol {
             return TYPE;
         }
     }
+    // ---------------------------------------------------------------- panel staff
+
+    /** Client -> serveur : ouverture (ou relecture) du panel staff ; le serveur repond par {@link PanelData}. */
+    public record PanelRequest() implements CustomPacketPayload {
+        public static final PanelRequest INSTANCE = new PanelRequest();
+        public static final Type<PanelRequest> TYPE = new Type<>(id("panel_request"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, PanelRequest> STREAM_CODEC = StreamCodec.unit(INSTANCE);
+
+        @Override
+        public Type<PanelRequest> type() {
+            return TYPE;
+        }
+    }
+
+    /** Mode lent (secondes, 0 = non) et verrou d'un serveur, ou de tous ({@code scope} = "*"). */
+    public record RuleEntry(String scope, int slowSeconds, boolean locked) {
+        public static final StreamCodec<RegistryFriendlyByteBuf, RuleEntry> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, RuleEntry::scope,
+                ByteBufCodecs.VAR_INT, RuleEntry::slowSeconds,
+                ByteBufCodecs.BOOL, RuleEntry::locked,
+                RuleEntry::new);
+    }
+
+    /** Annonce automatique ({@code servers} : "*" ou identifiants separes par des virgules). */
+    public record AnnouncementEntry(long id, String message, int intervalMinutes, String servers, boolean discord,
+                                    boolean enabled) {
+        public static final StreamCodec<RegistryFriendlyByteBuf, AnnouncementEntry> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_LONG, AnnouncementEntry::id,
+                ByteBufCodecs.STRING_UTF8, AnnouncementEntry::message,
+                ByteBufCodecs.VAR_INT, AnnouncementEntry::intervalMinutes,
+                ByteBufCodecs.STRING_UTF8, AnnouncementEntry::servers,
+                ByteBufCodecs.BOOL, AnnouncementEntry::discord,
+                ByteBufCodecs.BOOL, AnnouncementEntry::enabled,
+                AnnouncementEntry::new);
+    }
+
+    /** Mot filtre : masque (etoiles) ou message bloque. */
+    public record FilterEntry(String word, boolean block) {
+        public static final StreamCodec<RegistryFriendlyByteBuf, FilterEntry> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, FilterEntry::word,
+                ByteBufCodecs.BOOL, FilterEntry::block,
+                FilterEntry::new);
+    }
+
+        @Override
+        public Type<PanelData> type() {
+            return TYPE;
+        }
+    }
+
+        @Override
+        public Type<PanelAction> type() {
+            return TYPE;
+        }
+    }
 }

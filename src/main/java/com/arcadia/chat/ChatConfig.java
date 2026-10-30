@@ -74,6 +74,7 @@ public final class ChatConfig {
                 .define("timestampHover", true);
         HEADS = b.comment("Afficher la tete du joueur devant ses messages.")
                 .define("heads", true);
+        b.pop();
 
         b.push("privacy");
         UNSIGNED_CHAT = b.comment("Ne pas signer tes messages quand le serveur ne l'exige pas : ils ne peuvent alors pas",

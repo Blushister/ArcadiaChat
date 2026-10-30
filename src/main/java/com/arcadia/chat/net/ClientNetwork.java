@@ -1,7 +1,9 @@
 package com.arcadia.chat.net;
 
+import java.util.List;
 
 import com.arcadia.chat.client.ChannelsScreen;
+import com.arcadia.chat.client.StaffPanelScreen;
 import com.arcadia.chat.tabs.Category;
 import com.arcadia.chat.tabs.TabState;
 import net.minecraft.client.Minecraft;
@@ -119,6 +121,20 @@ public final class ClientNetwork {
         return connection != null && connection.hasChannel(TabsProtocol.React.TYPE);
     }
 
+    /** Panel staff : demande son contenu (le serveur repond selon les permissions du joueur). */
+    public static void requestPanel() {
+        send(TabsProtocol.PanelRequest.INSTANCE);
+    }
+
+    /** Action du panel staff (voir {@link TabsProtocol.PanelAction}). */
+    public static void panelAction(String kind, String... args) {
+        send(new TabsProtocol.PanelAction(kind, List.of(args)));
+    }
+
+    public static boolean supportsPanel() {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        return connection != null && connection.hasChannel(TabsProtocol.PanelRequest.TYPE);
+    }
 
     public static void sendTyping(boolean typing) {
         send(new TabsProtocol.Typing(typing));

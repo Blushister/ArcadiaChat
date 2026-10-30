@@ -3,6 +3,7 @@ package com.arcadia.chat.mixin;
 import java.util.List;
 import java.util.Map;
 
+import com.arcadia.chat.ChatConfig;
 import com.arcadia.chat.client.ChatHeads;
 import com.arcadia.chat.client.MessageMenu;
 import com.arcadia.chat.tabs.ChatView;
@@ -31,6 +32,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Le chat de Minecraft n'affiche que l'onglet actif.
@@ -74,6 +76,8 @@ public abstract class ChatComponentMixin implements ChatView {
 
     @Shadow
     public abstract void resetChatScroll();
+
+    @Shadow
 
     @Shadow
     private int getMessageLineIndexAt(double mouseX, double mouseY) {
