@@ -6,7 +6,10 @@
   "client": [
     "ChatComponentMixin",
     "ChatScreenAccessor",
-    "ClientSuggestionProviderMixin"
+    "ChatScreenMixin",
+    "ClientPacketListenerMixin",
+    "ClientSuggestionProviderMixin",
+    "CommandSuggestionsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

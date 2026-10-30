@@ -39,6 +39,12 @@ public abstract class ClientSuggestionProviderMixin {
                 names.add("@" + name);
             }
         }
+        // Mentions de groupe : @staff pour tous ; @everyone et @tous pour le staff (le serveur verifie le droit).
+        names.add("@staff");
+        if (TabState.isStaff()) {
+            names.add("@everyone");
+            names.add("@tous");
+        }
         cir.setReturnValue(names);
     }
 }

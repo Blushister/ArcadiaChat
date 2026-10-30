@@ -371,7 +371,7 @@ public final class TabState {
     private static Pattern mentionCache;
 
     private static Pattern mentionPattern(String name) {
-        String key = ChatConfig.MENTION_PLAIN_NAME.get() + "|" + name;
+        String key = ChatConfig.MENTION_PLAIN_NAME.get() + "|" + staff + "|" + name;
         if (!key.equals(mentionKey)) {
             mentionCache = buildMentionPattern(name);
             mentionKey = key;
@@ -379,9 +379,14 @@ public final class TabState {
         return mentionCache;
     }
 
+    /**
+     * Le pseudo du joueur, et les mentions de groupe : @everyone (ou @tous, @here) pour tout le monde, @staff pour le
+     * staff. Le serveur desamorce @everyone quand son auteur n'a pas le droit de l'utiliser.
+     */
     private static Pattern buildMentionPattern(String name) {
-        return Pattern.compile((ChatConfig.MENTION_PLAIN_NAME.get() ? "(?<![\\w@])@?" : "@")
-                + Pattern.quote(name) + "(?!\\w)", Pattern.CASE_INSENSITIVE);
+        String self = (ChatConfig.MENTION_PLAIN_NAME.get() ? "(?<![\\w@])@?" : "@") + Pattern.quote(name);
+        String groups = "@(?:everyone|tous|here" + (staff ? "|staff" : "") + ")";
+        return Pattern.compile("(?:" + self + "|" + groups + ")(?!\\w)", Pattern.CASE_INSENSITIVE);
     }
 
     private static boolean isFiltered(Component content) {
