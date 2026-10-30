@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.arcadia.chat.client.ChatHeads;
+import com.arcadia.chat.client.MessageMenu;
 import com.arcadia.chat.tabs.ChatView;
 import com.google.common.collect.MapMaker;
 import com.arcadia.chat.tabs.TabState;
@@ -161,6 +162,14 @@ public abstract class ChatComponentMixin implements ChatView {
     private Style arcadiachat$styleAfterHead(StringSplitter splitter, FormattedCharSequence text, int x,
                                               Operation<Style> original) {
         return original.call(splitter, text, arcadiachat$headLines().containsKey(text) ? x - ChatHeads.SPACE : x);
+    }
+
+    /** Menu du clic droit ouvert : pas de survol des messages, son infobulle passerait par-dessus le menu. */
+    @Inject(method = {"getClickedComponentStyleAt", "getMessageTagAt"}, at = @At("HEAD"), cancellable = true)
+    private void arcadiachat$noHoverUnderMenu(double mouseX, double mouseY, CallbackInfoReturnable<Object> cir) {
+        if (MessageMenu.isOpen()) {
+            cir.setReturnValue(null);
+        }
     }
 
     @Inject(method = "getTagIconLeft", at = @At("RETURN"), cancellable = true)
