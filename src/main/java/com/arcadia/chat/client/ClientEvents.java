@@ -135,6 +135,7 @@ public final class ClientEvents {
         }
         Minecraft mc = Minecraft.getInstance();
         TabState.reapplySettings();
+        Drafts.onOpen(screen);
         searchBox = new EditBox(mc.font, 2, TabBar.top(screen.height) - TabBar.HEIGHT - 2, 160, TabBar.HEIGHT,
                 Component.translatable("arcadiachat.search"));
         searchBox.setHint(Component.translatable("arcadiachat.search.hint"));
@@ -146,7 +147,8 @@ public final class ClientEvents {
 
     @SubscribeEvent
     public static void onScreenClosing(ScreenEvent.Closing event) {
-        if (event.getScreen() instanceof ChatScreen) {
+        if (event.getScreen() instanceof ChatScreen screen) {
+            Drafts.onClose(screen);
             MessageMenu.close();
             closeSearch(null);
             stopTyping();

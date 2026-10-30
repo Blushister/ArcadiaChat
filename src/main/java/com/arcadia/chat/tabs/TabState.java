@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.arcadia.chat.ChatConfig;
+import com.arcadia.chat.client.Drafts;
 import com.arcadia.chat.client.Reactions;
 import com.arcadia.chat.net.ClientNetwork;
 import com.arcadia.chat.net.TabsProtocol;
@@ -167,6 +168,7 @@ public final class TabState {
         enabled = false;
         Reactions.clear();
         remotePlayers = List.of();
+        Drafts.clear();
         history.clear();
         unread.clear();
         mentioned.clear();
@@ -446,6 +448,7 @@ public final class TabState {
             return;
         }
         active = tab;
+        Drafts.onTabChange(tab);
         unread.remove(tab);
         mentioned.remove(tab);
         refresh();

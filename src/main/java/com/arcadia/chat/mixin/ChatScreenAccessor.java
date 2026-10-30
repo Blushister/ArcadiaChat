@@ -11,4 +11,8 @@ public interface ChatScreenAccessor {
 
     @Accessor("input")
     EditBox arcadiachat$input();
+
+    /** Texte d'ouverture ("/" avec la touche des commandes). */
+    @Accessor("initial")
+    String arcadiachat$initial();
 }
