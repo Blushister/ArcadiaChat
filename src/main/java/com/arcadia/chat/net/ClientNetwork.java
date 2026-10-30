@@ -55,6 +55,16 @@ public final class ClientNetwork {
         registrar.playToServer(TabsProtocol.Typing.TYPE, TabsProtocol.Typing.STREAM_CODEC, (payload, context) -> { });
         registrar.playToServer(TabsProtocol.ChannelsRequest.TYPE, TabsProtocol.ChannelsRequest.STREAM_CODEC,
                 (payload, context) -> { });
+        registrar.playToClient(TabsProtocol.PanelData.TYPE, TabsProtocol.PanelData.STREAM_CODEC, (payload, context) -> {
+            StaffPanelScreen screen = StaffPanelScreen.current();
+            if (screen != null) {
+                screen.onData(payload);
+            }
+        });
+        registrar.playToClient(TabsProtocol.Pinned.TYPE, TabsProtocol.Pinned.STREAM_CODEC,
+                (payload, context) -> TabState.updatePinned(payload.lines()));
+        registrar.playToServer(TabsProtocol.PanelRequest.TYPE, TabsProtocol.PanelRequest.STREAM_CODEC, (payload, context) -> { });
+        registrar.playToServer(TabsProtocol.PanelAction.TYPE, TabsProtocol.PanelAction.STREAM_CODEC, (payload, context) -> { });
     }
 
     private static void onLine(TabsProtocol.Line line, IPayloadContext context) {

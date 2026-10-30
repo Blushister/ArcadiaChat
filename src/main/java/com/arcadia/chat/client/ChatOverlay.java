@@ -31,6 +31,14 @@ public final class ChatOverlay {
     private ChatOverlay() {
     }
 
+    public static void render(GuiGraphics graphics, int screenHeight, int mouseX, int mouseY) {
+        Minecraft mc = Minecraft.getInstance();
+        ChatComponent chat = mc.gui.getChat();
+        Font font = mc.font;
+        double scale = chat.getScale();
+        int chatWidth = (int) Math.ceil(chat.getWidth() * scale) + 8;
+        renderPins(graphics, font, chat, scale, chatWidth, screenHeight);
+
         buttonWidth = 0;
         ChatView view = (ChatView) chat;
         if (!view.arcadiachat$scrolledUp()) {
@@ -48,6 +56,34 @@ public final class ChatOverlay {
         graphics.pose().translate(0, 0, 200);
         graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 12, hover ? BUTTON_HOVER : BUTTON);
         graphics.drawString(font, label, buttonX + 5, buttonY + 2, TEXT, false);
+        graphics.pose().popPose();
+    }
+
+    /** Bandeau epingle, juste au-dessus de la zone du chat. */
+    private static void renderPins(GuiGraphics graphics, Font font, ChatComponent chat, double scale, int chatWidth,
+                                   int screenHeight) {
+        List<Component> pins = TabState.pinned();
+        if (pins.isEmpty()) {
+            return;
+        }
+        int lineHeight = font.lineHeight + 2;
+        int chatTop = screenHeight - 40 - (int) Math.ceil(chat.getHeight() * scale);
+        int lines = 0;
+        for (Component pin : pins) {
+            lines += font.split(pin, chatWidth - 10).size();
+        }
+        int top = Math.max(2, chatTop - lines * lineHeight - 4);
+        graphics.pose().pushPose();
+        graphics.pose().translate(0, 0, 150);
+        graphics.fill(0, top, chatWidth, top + lines * lineHeight + 2, PIN_BACKGROUND);
+        graphics.fill(0, top, 2, top + lines * lineHeight + 2, PIN_ACCENT);
+        int y = top + 2;
+        for (Component pin : pins) {
+            for (FormattedCharSequence line : font.split(pin, chatWidth - 10)) {
+                graphics.drawString(font, line, 6, y, TEXT, false);
+                y += lineHeight;
+            }
+        }
         graphics.pose().popPose();
     }
 

@@ -155,6 +155,16 @@ public final class TabState {
         }
     }
 
+    /** Messages epingles en haut du chat (envoyes par le serveur). */
+    private static List<Component> pinned = List.of();
+
+    public static void updatePinned(List<Component> lines) {
+        pinned = List.copyOf(lines);
+    }
+
+    public static List<Component> pinned() {
+        return enabled ? pinned : List.of();
+    }
 
     public static void updateRemotePlayers(List<String> names) {
         remotePlayers = List.copyOf(names);
@@ -168,6 +178,7 @@ public final class TabState {
         enabled = false;
         Reactions.clear();
         remotePlayers = List.of();
+        pinned = List.of();
         Drafts.clear();
         history.clear();
         unread.clear();
