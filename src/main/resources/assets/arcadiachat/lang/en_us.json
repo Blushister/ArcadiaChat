@@ -110,6 +110,7 @@
   "arcadiachat.panel.word_hint": "Whole word, case-insensitive. \"word*\" also matches words starting with it.",
   "arcadiachat.panel.mask": "Mask",
   "arcadiachat.panel.block": "Block",
+  "arcadiachat.menu.ignore": "Ignore / unignore",
   "arcadiachat.panel.pin": "Pin",
   "arcadiachat.panel.pin_text": "Message to pin at the top of the chat",
   "arcadiachat.panel.new_pin": "New pinned message (replaces the one with the same scope)",

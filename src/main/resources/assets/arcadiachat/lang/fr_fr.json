@@ -110,6 +110,7 @@
   "arcadiachat.panel.word_hint": "Mot entier, sans tenir compte des majuscules. « mot* » vise aussi les mots qui commencent ainsi.",
   "arcadiachat.panel.mask": "Masquer",
   "arcadiachat.panel.block": "Bloquer",
+  "arcadiachat.menu.ignore": "Ignorer / ne plus ignorer",
   "arcadiachat.panel.pin": "Épingler",
   "arcadiachat.panel.pin_text": "Message à épingler en haut du chat",
   "arcadiachat.panel.new_pin": "Nouveau message épinglé (remplace celui de la même portée)",

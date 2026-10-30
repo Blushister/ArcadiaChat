@@ -92,6 +92,9 @@ public final class MessageMenu {
                 input.setValue("/report " + sender + " ");
                 screen.setFocused(input);
             }));
+            if (hasCommand("ignore")) {
+                list.add(new Item(Component.translatable("arcadiachat.menu.ignore", sender), () -> command("ignore " + sender)));
+            }
         }
         if (TabState.isJoinable(origin)) {
             TabsProtocol.ServerInfo server = TabState.server(origin);
@@ -193,6 +196,11 @@ public final class MessageMenu {
         return true;
     }
 
+    /** Le serveur propose-t-il cette commande ? (ArcadiaBridge assez recent) */
+    private static boolean hasCommand(String name) {
+        var connection = Minecraft.getInstance().getConnection();
+        return connection != null && connection.getCommands().getRoot().getChild(name) != null;
+    }
 
     private static String selfName() {
         var player = Minecraft.getInstance().player;
