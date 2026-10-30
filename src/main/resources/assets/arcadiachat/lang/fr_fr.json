@@ -117,5 +117,7 @@
   "arcadiachat.panel.new_pin": "Nouveau message épinglé (remplace celui de la même portée)",
   "arcadiachat.panel.ago_minutes": "%s min",
   "arcadiachat.panel.ago_hours": "%s h",
-  "arcadiachat.panel.ago_days": "%s j"
+  "arcadiachat.panel.ago_days": "%s j",
+  "arcadiachat.overlay.new_messages": "↓ %s nouveau(x) message(s)",
+  "arcadiachat.overlay.bottom": "↓ Revenir en bas"
 }

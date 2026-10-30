@@ -15,4 +15,10 @@ public interface ChatView {
 
     /** Message affiche sous la souris (chat ouvert), ou null. */
     GuiMessage arcadiachat$messageAt(double mouseX, double mouseY);
+
+    /** Le joueur a remonte le chat (il ne voit plus les derniers messages). */
+    boolean arcadiachat$scrolledUp();
+
+    /** Messages arrives depuis que le joueur a remonte le chat. */
+    int arcadiachat$unseen();
 }

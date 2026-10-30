@@ -173,6 +173,7 @@ public final class ClientEvents {
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (event.getScreen() instanceof ChatScreen screen && TabState.isEnabled()) {
             TabBar.render(event.getGuiGraphics(), screen.width, screen.height, event.getMouseX(), event.getMouseY());
+            ChatOverlay.render(event.getGuiGraphics(), screen.height, event.getMouseX(), event.getMouseY());
             MessageMenu.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY());
         }
     }
@@ -184,6 +185,10 @@ public final class ClientEvents {
         }
         // Menu ouvert : le clic le ferme (et lance l'action touchee).
         if (MessageMenu.click(event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (event.getButton() == 0 && ChatOverlay.click(event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
             return;
         }

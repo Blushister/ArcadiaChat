@@ -104,6 +104,11 @@ public abstract class ChatComponentMixin implements ChatView {
     public abstract void resetChatScroll();
 
     @Shadow
+    private int chatScrollbarPos;
+
+    /** Messages arrives pendant que le chat est remonte (bouton "nouveaux messages"). */
+    @Unique
+    private int arcadiachat$unseenCount;
 
     @Shadow
     private int getMessageLineIndexAt(double mouseX, double mouseY) {
@@ -296,10 +301,33 @@ public abstract class ChatComponentMixin implements ChatView {
             TabState.record(message, arcadiachat$adding);
             if (!TabState.displays(arcadiachat$adding, message.content())) {
                 ci.cancel();
+            } else if (chatScrollbarPos > 0) {
+                arcadiachat$unseenCount++;
             }
         }
     }
 
+    @Inject(method = "resetChatScroll", at = @At("HEAD"))
+    private void arcadiachat$seenAll(CallbackInfo ci) {
+        arcadiachat$unseenCount = 0;
+    }
+
+    @Inject(method = "scrollChat", at = @At("RETURN"))
+    private void arcadiachat$scrolled(int amount, CallbackInfo ci) {
+        if (chatScrollbarPos == 0) {
+            arcadiachat$unseenCount = 0;
+        }
+    }
+
+    @Override
+    public boolean arcadiachat$scrolledUp() {
+        return chatScrollbarPos > 0;
+    }
+
+    @Override
+    public int arcadiachat$unseen() {
+        return arcadiachat$unseenCount;
+    }
 
     @Inject(method = "clearMessages", at = @At("HEAD"))
     private void arcadiachat$clear(boolean clearSentMsgHistory, CallbackInfo ci) {

@@ -117,5 +117,7 @@
   "arcadiachat.panel.new_pin": "New pinned message (replaces the one with the same scope)",
   "arcadiachat.panel.ago_minutes": "%s min",
   "arcadiachat.panel.ago_hours": "%s h",
-  "arcadiachat.panel.ago_days": "%s d"
+  "arcadiachat.panel.ago_days": "%s d",
+  "arcadiachat.overlay.new_messages": "↓ %s new message(s)",
+  "arcadiachat.overlay.bottom": "↓ Back to bottom"
 }
