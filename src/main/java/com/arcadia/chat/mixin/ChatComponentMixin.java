@@ -3,14 +3,22 @@ package com.arcadia.chat.mixin;
 import java.util.List;
 import java.util.Map;
 
+import com.arcadia.chat.client.ChatHeads;
 import com.arcadia.chat.tabs.ChatView;
 import com.google.common.collect.MapMaker;
 import com.arcadia.chat.tabs.TabState;
 import net.minecraft.client.GuiMessage;
 import net.minecraft.client.GuiMessageTag;
+import net.minecraft.client.StringSplitter;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -48,7 +56,7 @@ public abstract class ChatComponentMixin implements ChatView {
 
     /** Pour chaque ligne affichee, le message dont elle fait partie (un long message tient sur plusieurs lignes). */
     @Unique
-    private final Map<GuiMessage.Line, GuiMessage> arcadiachat$lineOwners = new MapMaker().weakKeys().makeMap();
+    private Map<GuiMessage.Line, GuiMessage> arcadiachat$lineOwners;
     @Unique
     private GuiMessage arcadiachat$displaying;
 
@@ -81,10 +89,44 @@ public abstract class ChatComponentMixin implements ChatView {
         throw new AssertionError("mixin");
     }
 
+    /**
+     * Tables creees au premier usage : un message peut arriver avant que les initialisations ajoutees au
+     * constructeur n'aient ete appliquees (le chat est parfois recree par d'autres mods).
+     */
+    @Unique
+    private Map<GuiMessage.Line, GuiMessage> arcadiachat$owners() {
+        if (arcadiachat$lineOwners == null) {
+            arcadiachat$lineOwners = new MapMaker().weakKeys().makeMap();
+        }
+        return arcadiachat$lineOwners;
+    }
+
+    @Unique
+    private Map<FormattedCharSequence, String> arcadiachat$headLines() {
+        if (arcadiachat$heads == null) {
+            arcadiachat$heads = new MapMaker().weakKeys().makeMap();
+        }
+        return arcadiachat$heads;
+    }
 
     @Inject(method = "addMessageToDisplayQueue", at = @At("HEAD"))
     private void arcadiachat$beginLines(GuiMessage message, CallbackInfo ci) {
         arcadiachat$displaying = message;
+        String sender = arcadiachat$adding != null ? arcadiachat$adding.sender() : null;
+        if (sender == null || sender.isEmpty()) {
+            TabState.Meta meta = TabState.metaOf(message);
+            sender = meta != null && !meta.sender().isEmpty() ? meta.sender() : ChatHeads.senderIn(message.content());
+        }
+        arcadiachat$headSender = ChatHeads.hasHead(sender) ? sender : null;
+        arcadiachat$firstLine = true;
+    }
+
+    /** Place de la tete retiree de la largeur des lignes. */
+    @ModifyVariable(method = "addMessageToDisplayQueue", ordinal = 0, at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/components/ComponentRenderUtils;wrapComponents(Lnet/minecraft/network/chat/FormattedText;ILnet/minecraft/client/gui/Font;)Ljava/util/List;"))
+    private int arcadiachat$narrow(int width) {
+        return arcadiachat$headSender != null ? width - ChatHeads.SPACE : width;
+    }
 
     /** Historique plus long que les 100 messages de Minecraft. */
     @ModifyConstant(method = "addMessageToQueue", constant = @Constant(intValue = 100))
@@ -97,13 +139,46 @@ public abstract class ChatComponentMixin implements ChatView {
     private int arcadiachat$maxLines(int vanilla) {
         return Math.max(vanilla, ChatConfig.HISTORY.get() * 3);
     }
+
+    /** Tete devant la premiere ligne d'un message, et texte decale sur toutes ses lignes. */
+    @WrapOperation(method = "render", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;III)I"))
+    private int arcadiachat$drawHead(GuiGraphics graphics, Font font, FormattedCharSequence text, int x, int y, int color,
+                                     Operation<Integer> original) {
+        String sender = arcadiachat$headLines().get(text);
+        if (sender == null) {
+            return original.call(graphics, font, text, x, y, color);
+        }
+        if (!sender.isEmpty()) {
+            ChatHeads.draw(graphics, sender, x, y, color);
+        }
+        return original.call(graphics, font, text, x + ChatHeads.SPACE, y, color);
+    }
+
+    /** Survol et clic : le texte commence apres la tete. */
+    @WrapOperation(method = "getClickedComponentStyleAt", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/StringSplitter;componentStyleAtWidth(Lnet/minecraft/util/FormattedCharSequence;I)Lnet/minecraft/network/chat/Style;"))
+    private Style arcadiachat$styleAfterHead(StringSplitter splitter, FormattedCharSequence text, int x,
+                                              Operation<Style> original) {
+        return original.call(splitter, text, arcadiachat$headLines().containsKey(text) ? x - ChatHeads.SPACE : x);
+    }
+
+    @Inject(method = "getTagIconLeft", at = @At("RETURN"), cancellable = true)
+    private void arcadiachat$tagAfterHead(GuiMessage.Line line, CallbackInfoReturnable<Integer> cir) {
+        if (arcadiachat$headLines().containsKey(line.content())) {
+            cir.setReturnValue(cir.getReturnValue() + ChatHeads.SPACE);
+        }
     }
 
     @ModifyArg(method = "addMessageToDisplayQueue",
             at = @At(value = "INVOKE", target = "Ljava/util/List;add(ILjava/lang/Object;)V"), index = 1)
     private Object arcadiachat$ownLine(Object line) {
         if (arcadiachat$displaying != null && line instanceof GuiMessage.Line l) {
-            arcadiachat$lineOwners.put(l, arcadiachat$displaying);
+            arcadiachat$owners().put(l, arcadiachat$displaying);
+            if (arcadiachat$headSender != null) {
+                arcadiachat$headLines().put(l.content(), arcadiachat$firstLine ? arcadiachat$headSender : "");
+                arcadiachat$firstLine = false;
+            }
         }
         return line;
     }
@@ -179,6 +254,6 @@ public abstract class ChatComponentMixin implements ChatView {
         if (index < 0 || index >= trimmedMessages.size()) {
             return null;
         }
-        return arcadiachat$lineOwners.get(trimmedMessages.get(index));
+        return arcadiachat$owners().get(trimmedMessages.get(index));
     }
 }

@@ -63,6 +63,7 @@
   "arcadiachat.configuration.plainName": "Name without @ counts too",
   "arcadiachat.configuration.sound": "Sound on mention",
   "arcadiachat.configuration.display": "Display",
+  "arcadiachat.configuration.heads": "Player heads",
   "arcadiachat.configuration.timestamps": "Time before messages",
   "arcadiachat.configuration.timestampHover": "Time on hover",
   "arcadiachat.configuration.bubbles": "Chat bubbles",

@@ -117,6 +117,7 @@ public final class ClientEvents {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         TabState.disable();
+        ChatHeads.clear();
         typing = false;
     }
 

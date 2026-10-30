@@ -63,6 +63,7 @@
   "arcadiachat.configuration.plainName": "Pseudo sans @ compte aussi",
   "arcadiachat.configuration.sound": "Son lors d'une mention",
   "arcadiachat.configuration.display": "Affichage",
+  "arcadiachat.configuration.heads": "Têtes des joueurs",
   "arcadiachat.configuration.timestamps": "Heure devant les messages",
   "arcadiachat.configuration.timestampHover": "Heure au survol",
   "arcadiachat.configuration.bubbles": "Bulles de chat",

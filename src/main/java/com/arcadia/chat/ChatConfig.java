@@ -22,6 +22,7 @@ public final class ChatConfig {
 
     public static final ModConfigSpec.BooleanValue TIMESTAMPS;
     public static final ModConfigSpec.BooleanValue TIMESTAMP_HOVER;
+    public static final ModConfigSpec.BooleanValue HEADS;
 
     public static final ModConfigSpec.BooleanValue BUBBLES;
     public static final ModConfigSpec.IntValue BUBBLE_DISTANCE;
@@ -68,6 +69,8 @@ public final class ChatConfig {
                 .define("timestamps", false);
         TIMESTAMP_HOVER = b.comment("Afficher l'heure d'un message en le survolant.")
                 .define("timestampHover", true);
+        HEADS = b.comment("Afficher la tete du joueur devant ses messages.")
+                .define("heads", true);
         b.pop();
 
         b.push("bubbles");
