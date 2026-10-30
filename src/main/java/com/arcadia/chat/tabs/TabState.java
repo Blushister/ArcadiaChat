@@ -265,6 +265,10 @@ public final class TabState {
             }
         }
     }
+
+    /** Retire un message de l'historique (remplace par sa repetition regroupee). */
+    public static void forget(GuiMessage message) {
+        history.removeIf(entry -> entry.message() == message);
     }
 
     public static void clearHistory() {

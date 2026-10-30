@@ -111,6 +111,7 @@
   "arcadiachat.panel.mask": "Masquer",
   "arcadiachat.panel.block": "Bloquer",
   "arcadiachat.menu.ignore": "Ignorer / ne plus ignorer",
+  "arcadiachat.configuration.groupRepeats": "Regrouper les messages répétés",
   "arcadiachat.panel.pin": "Épingler",
   "arcadiachat.panel.pin_text": "Message à épingler en haut du chat",
   "arcadiachat.panel.new_pin": "Nouveau message épinglé (remplace celui de la même portée)",

@@ -23,6 +23,7 @@ public final class ChatConfig {
     public static final ModConfigSpec.BooleanValue TIMESTAMPS;
     public static final ModConfigSpec.BooleanValue TIMESTAMP_HOVER;
     public static final ModConfigSpec.BooleanValue HEADS;
+    public static final ModConfigSpec.BooleanValue GROUP_REPEATS;
 
     public static final ModConfigSpec.BooleanValue UNSIGNED_CHAT;
     public static final ModConfigSpec.BooleanValue HIDE_UNSECURE_WARNING;
@@ -74,6 +75,8 @@ public final class ChatConfig {
                 .define("timestampHover", true);
         HEADS = b.comment("Afficher la tete du joueur devant ses messages.")
                 .define("heads", true);
+        GROUP_REPEATS = b.comment("Regrouper les messages identiques qui se suivent en un seul, avec le nombre de repetitions (x3).")
+                .define("groupRepeats", true);
         b.pop();
 
         b.push("privacy");

@@ -3,6 +3,19 @@ package com.arcadia.chat.client;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.arcadia.chat.net.ClientNetwork;
+import com.arcadia.chat.net.TabsProtocol;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+
 /**
  * Panel staff (bouton ⚑ de la barre d'onglets) : mode lent et verrou du chat par serveur ou pour tous, annonces
  * automatiques et mots filtres. Le serveur n'envoie que les sections permises, et verifie chaque action.

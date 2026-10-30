@@ -111,6 +111,7 @@
   "arcadiachat.panel.mask": "Mask",
   "arcadiachat.panel.block": "Block",
   "arcadiachat.menu.ignore": "Ignore / unignore",
+  "arcadiachat.configuration.groupRepeats": "Group repeated messages",
   "arcadiachat.panel.pin": "Pin",
   "arcadiachat.panel.pin_text": "Message to pin at the top of the chat",
   "arcadiachat.panel.new_pin": "New pinned message (replaces the one with the same scope)",

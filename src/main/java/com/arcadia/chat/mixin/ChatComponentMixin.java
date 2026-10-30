@@ -9,6 +9,7 @@ import com.arcadia.chat.client.MessageMenu;
 import com.arcadia.chat.tabs.ChatView;
 import com.google.common.collect.MapMaker;
 import com.arcadia.chat.tabs.TabState;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.GuiMessage;
 import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.StringSplitter;
@@ -62,6 +63,31 @@ public abstract class ChatComponentMixin implements ChatView {
     private Map<GuiMessage.Line, GuiMessage> arcadiachat$lineOwners;
     @Unique
     private GuiMessage arcadiachat$displaying;
+    /**
+     * Lignes des messages avec une tete : l'auteur pour la premiere ligne, "" pour les suivantes (decalees
+     * d'autant). Les lignes sans tete n'y sont pas.
+     */
+    @Unique
+    private Map<FormattedCharSequence, String> arcadiachat$heads;
+    @Unique
+    private String arcadiachat$headSender;
+    /** Regroupement des messages repetes : le dernier message recu, son texte, son onglet et son compte. */
+    @Unique
+    private GuiMessage arcadiachat$lastMessage;
+    @Unique
+    private String arcadiachat$lastPlain;
+    @Unique
+    private String arcadiachat$lastKind;
+    @Unique
+    private int arcadiachat$repeat;
+    @Unique
+    private String arcadiachat$pendingPlain;
+    @Unique
+    private String arcadiachat$pendingKind;
+    @Unique
+    private int arcadiachat$pendingRepeat;
+    @Unique
+    private boolean arcadiachat$firstLine;
 
     /** Message en cours d'ajout ; null en dehors d'un ajout (reaffichage, redimensionnement...). */
     @Unique
@@ -196,10 +222,38 @@ public abstract class ChatComponentMixin implements ChatView {
         return line;
     }
 
-    /** Heure du message (en tete de ligne ou au survol). */
+    /**
+     * Heure du message (en tete de ligne ou au survol), et regroupement : un message identique au precedent (meme
+     * texte, meme onglet) remplace celui-ci, avec le nombre de repetitions ("(x3)").
+     */
     @ModifyVariable(method = ADD_MESSAGE, at = @At("HEAD"), argsOnly = true)
     private Component arcadiachat$decorate(Component content) {
-        return TabState.decorate(content);
+        int repeat = arcadiachat$groupRepeat(content);
+        Component decorated = TabState.decorate(content);
+        if (repeat <= 1) {
+            return decorated;
+        }
+        return decorated.copy().append(Component.literal(" (x" + repeat + ")").withStyle(ChatFormatting.GRAY));
+    }
+
+    /** @return le nombre de repetitions du message (1 : nouveau message) ; le precedent identique est retire. */
+    @Unique
+    private int arcadiachat$groupRepeat(Component content) {
+        String plain = content.getString();
+        TabState.Incoming in = TabState.currentMessage(content);
+        String kind = in.category() + "|" + in.key();
+        GuiMessage previous = arcadiachat$lastMessage;
+        boolean same = ChatConfig.GROUP_REPEATS.get() && previous != null && !plain.isBlank()
+                && plain.equals(arcadiachat$lastPlain) && kind.equals(arcadiachat$lastKind);
+        arcadiachat$pendingPlain = plain;
+        arcadiachat$pendingKind = kind;
+        arcadiachat$pendingRepeat = same ? arcadiachat$repeat + 1 : 1;
+        if (same) {
+            allMessages.remove(previous);
+            trimmedMessages.removeIf(line -> arcadiachat$owners().get(line) == previous);
+            TabState.forget(previous);
+        }
+        return arcadiachat$pendingRepeat;
     }
 
     /** Barre orange pour les messages qui mentionnent le joueur. */
@@ -234,6 +288,11 @@ public abstract class ChatComponentMixin implements ChatView {
     @Inject(method = "addMessageToQueue", at = @At("HEAD"), cancellable = true)
     private void arcadiachat$record(GuiMessage message, CallbackInfo ci) {
         if (arcadiachat$adding != null) {
+            // Dernier message recu, pour regrouper le suivant s'il est identique.
+            arcadiachat$lastMessage = message;
+            arcadiachat$lastPlain = arcadiachat$pendingPlain;
+            arcadiachat$lastKind = arcadiachat$pendingKind;
+            arcadiachat$repeat = arcadiachat$pendingRepeat;
             TabState.record(message, arcadiachat$adding);
             if (!TabState.displays(arcadiachat$adding, message.content())) {
                 ci.cancel();
@@ -244,6 +303,7 @@ public abstract class ChatComponentMixin implements ChatView {
 
     @Inject(method = "clearMessages", at = @At("HEAD"))
     private void arcadiachat$clear(boolean clearSentMsgHistory, CallbackInfo ci) {
+        arcadiachat$lastMessage = null;
         TabState.clearHistory();
     }
 
