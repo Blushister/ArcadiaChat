@@ -193,6 +193,7 @@ public final class MessageMenu {
         return true;
     }
 
+
     private static String selfName() {
         var player = Minecraft.getInstance().player;
         return player == null ? "" : player.getGameProfile().getName();

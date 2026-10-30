@@ -1,5 +1,6 @@
 package com.arcadia.chat.net;
 
+
 import com.arcadia.chat.client.ChannelsScreen;
 import com.arcadia.chat.tabs.Category;
 import com.arcadia.chat.tabs.TabState;
@@ -117,6 +118,7 @@ public final class ClientNetwork {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         return connection != null && connection.hasChannel(TabsProtocol.React.TYPE);
     }
+
 
     public static void sendTyping(boolean typing) {
         send(new TabsProtocol.Typing(typing));

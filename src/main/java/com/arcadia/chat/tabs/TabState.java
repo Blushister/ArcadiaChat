@@ -154,6 +154,7 @@ public final class TabState {
         }
     }
 
+
     public static void updateRemotePlayers(List<String> names) {
         remotePlayers = List.copyOf(names);
     }

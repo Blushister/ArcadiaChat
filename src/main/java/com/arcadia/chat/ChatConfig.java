@@ -49,7 +49,8 @@ public final class ChatConfig {
                 .define("rememberTab", true);
         LAST_TAB = b.comment("Dernier onglet utilise (mis a jour automatiquement).")
                 .define("lastTab", "all");
-        HISTORY = b.comment("Nombre de messages gardes en memoire, tous onglets confondus.")
+        HISTORY = b.comment("Nombre de messages gardes en memoire (tous onglets confondus) et que l'on peut faire",
+                        "defiler dans le chat (Minecraft s'arrete a 100).")
                 .defineInRange("history", 1000, 100, 20000);
         b.pop();
 

@@ -23,7 +23,6 @@
   "arcadiachat.search.hint": "Rechercher dans l'onglet…",
   "arcadiachat.join.title": "Rejoindre %s ?",
   "arcadiachat.join.text": "Tu vas quitter ce serveur pour te connecter à %s.",
-
   "arcadiachat.channels.title": "Canaux",
   "arcadiachat.channels.loading": "Chargement…",
   "arcadiachat.channels.none": "Aucun canal pour l'instant.",
@@ -43,7 +42,6 @@
   "arcadiachat.channels.delete_title": "Supprimer #%s ?",
   "arcadiachat.channels.delete_text": "Ses membres le perdront sur tous les serveurs, avec son historique.",
   "arcadiachat.channels.feedback": "Les réponses du serveur s'affichent dans le chat.",
-
   "arcadiachat.menu.title": "Message",
   "arcadiachat.menu.private": "Message privé",
   "arcadiachat.menu.mention": "Mentionner",
@@ -52,7 +50,6 @@
   "arcadiachat.menu.copy": "Copier le message",
   "arcadiachat.menu.history": "Historique (staff)",
   "arcadiachat.menu.mute": "Rendre muet… (staff)",
-
   "arcadiachat.configuration.title": "Réglages d'ArcadiaChat",
   "arcadiachat.configuration.tabs": "Onglets",
   "arcadiachat.configuration.order": "Ordre des onglets",

@@ -16,8 +16,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -79,9 +81,22 @@ public abstract class ChatComponentMixin implements ChatView {
         throw new AssertionError("mixin");
     }
 
+
     @Inject(method = "addMessageToDisplayQueue", at = @At("HEAD"))
     private void arcadiachat$beginLines(GuiMessage message, CallbackInfo ci) {
         arcadiachat$displaying = message;
+
+    /** Historique plus long que les 100 messages de Minecraft. */
+    @ModifyConstant(method = "addMessageToQueue", constant = @Constant(intValue = 100))
+    private int arcadiachat$maxMessages(int vanilla) {
+        return Math.max(vanilla, ChatConfig.HISTORY.get());
+    }
+
+    /** Lignes que l'on peut faire defiler (un message peut en prendre plusieurs). */
+    @ModifyConstant(method = "addMessageToDisplayQueue", constant = @Constant(intValue = 100))
+    private int arcadiachat$maxLines(int vanilla) {
+        return Math.max(vanilla, ChatConfig.HISTORY.get() * 3);
+    }
     }
 
     @ModifyArg(method = "addMessageToDisplayQueue",
@@ -137,6 +152,7 @@ public abstract class ChatComponentMixin implements ChatView {
             }
         }
     }
+
 
     @Inject(method = "clearMessages", at = @At("HEAD"))
     private void arcadiachat$clear(boolean clearSentMsgHistory, CallbackInfo ci) {
