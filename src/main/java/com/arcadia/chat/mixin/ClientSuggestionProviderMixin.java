@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import com.arcadia.chat.client.Emojis;
 import com.arcadia.chat.tabs.TabState;
 import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,21 +31,21 @@ public abstract class ClientSuggestionProviderMixin {
 
     @Inject(method = "getCustomTabSugggestions", at = @At("RETURN"), cancellable = true)
     private void arcadiachat$addMentions(CallbackInfoReturnable<Collection<String>> cir) {
-        if (!TabState.isEnabled()) {
-            return;
-        }
         Set<String> names = new LinkedHashSet<>(cir.getReturnValue());
-        for (String name : cir.getReturnValue()) {
-            if (!name.startsWith("@")) {
-                names.add("@" + name);
+        if (TabState.isEnabled()) {
+            for (String name : cir.getReturnValue()) {
+                if (!name.startsWith("@")) {
+                    names.add("@" + name);
+                }
+            }
+            // Mentions de groupe : @staff pour tous ; @everyone et @tous pour le staff (le serveur verifie le droit).
+            names.add("@staff");
+            if (TabState.isStaff()) {
+                names.add("@everyone");
+                names.add("@tous");
             }
         }
-        // Mentions de groupe : @staff pour tous ; @everyone et @tous pour le staff (le serveur verifie le droit).
-        names.add("@staff");
-        if (TabState.isStaff()) {
-            names.add("@everyone");
-            names.add("@tous");
-        }
+        names.addAll(Emojis.suggestions());
         cir.setReturnValue(names);
     }
 }

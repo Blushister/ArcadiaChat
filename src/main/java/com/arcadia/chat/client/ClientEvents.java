@@ -149,6 +149,7 @@ public final class ClientEvents {
     public static void onScreenClosing(ScreenEvent.Closing event) {
         if (event.getScreen() instanceof ChatScreen screen) {
             Drafts.onClose(screen);
+            EmojiPicker.close();
             MessageMenu.close();
             closeSearch(null);
             stopTyping();
@@ -174,6 +175,7 @@ public final class ClientEvents {
         if (event.getScreen() instanceof ChatScreen screen && TabState.isEnabled()) {
             TabBar.render(event.getGuiGraphics(), screen.width, screen.height, event.getMouseX(), event.getMouseY());
             ChatOverlay.render(event.getGuiGraphics(), screen.height, event.getMouseX(), event.getMouseY());
+            EmojiPicker.render(event.getGuiGraphics(), screen.width, screen.height, event.getMouseX(), event.getMouseY());
             MessageMenu.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY());
         }
     }
@@ -185,6 +187,12 @@ public final class ClientEvents {
         }
         // Menu ouvert : le clic le ferme (et lance l'action touchee).
         if (MessageMenu.click(event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
+        // Le bouton du selecteur le referme lui-meme : ne pas le fermer d'abord comme un clic exterieur.
+        if (event.getButton() == 0 && EmojiPicker.isOpen() && !TabBar.isEmojiButton(event.getMouseX(), event.getMouseY())
+                && EmojiPicker.click(screen, event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
             return;
         }
@@ -200,6 +208,14 @@ public final class ClientEvents {
         }
     }
 
+    @SubscribeEvent
+    public static void onMouseScroll(ScreenEvent.MouseScrolled.Pre event) {
+        if (event.getScreen() instanceof ChatScreen
+                && EmojiPicker.scroll(event.getMouseX(), event.getMouseY(), event.getScrollDeltaY())) {
+            event.setCanceled(true);
+        }
+    }
+
     /**
      * Ctrl+Tab / Ctrl+Maj+Tab : onglet suivant / precedent. Ctrl+F : rechercher dans l'onglet. Pendant une
      * recherche, Entree garde le resultat et rend la main a la saisie, Echap annule la recherche.
@@ -210,6 +226,11 @@ public final class ClientEvents {
             return;
         }
         int key = event.getKeyCode();
+        if (key == GLFW.GLFW_KEY_ESCAPE && EmojiPicker.isOpen()) {
+            EmojiPicker.close();
+            event.setCanceled(true);
+            return;
+        }
         if (key == GLFW.GLFW_KEY_ESCAPE && MessageMenu.isOpen()) {
             MessageMenu.close();
             event.setCanceled(true);

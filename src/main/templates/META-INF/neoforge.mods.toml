@@ -7,6 +7,7 @@ modId = "${mod_id}"
 version = "${mod_version}"
 displayName = "${mod_name}"
 authors = "${mod_authors}"
+credits = "Emoji graphics: Twemoji (CC-BY 4.0)"
 description = '''${mod_description}'''
 # Mod client uniquement : les serveurs n'ont pas besoin de l'installer (ArcadiaBridge s'en charge)
 displayTest = "IGNORE_ALL_VERSION"

@@ -100,7 +100,7 @@ public final class MessageMenu {
             TabsProtocol.ServerInfo server = TabState.server(origin);
             list.add(new Item(Component.translatable("arcadiachat.menu.join", server.name()), () -> ServerJoin.confirm(origin)));
         }
-        String text = message.content().getString();
+        String text = Emojis.toOriginal(message.content().getString());
         list.add(new Item(Component.translatable("arcadiachat.menu.copy"),
                 () -> mc.keyboardHandler.setClipboard(text)));
         if (other && TabState.isStaff()) {
@@ -148,7 +148,7 @@ public final class MessageMenu {
                 if (hover || Reactions.hasReacted(reactionKey, emoji, self)) {
                     graphics.fill(cellX, rowTop, cellX + CELL - 2, rowTop + ITEM_HEIGHT, hover ? HOVER : 0xFF2A4A2A);
                 }
-                graphics.drawString(font, Reactions.glyph(emoji), cellX + 3, rowTop + 2, TEXT, false);
+                graphics.drawString(font, Reactions.glyph(emoji), cellX + 3, rowTop + 2, 0xFFFFFFFF, false);
             }
         }
         for (int i = 0; i < items.size(); i++) {

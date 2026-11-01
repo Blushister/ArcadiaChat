@@ -18,21 +18,17 @@ import net.minecraft.client.GuiMessage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.neoforged.fml.ModList;
 
 /**
  * Reactions aux messages (❤, ★...). Un message est reconnu par une empreinte de son auteur et de son texte, la
- * meme chez tous les joueurs quel que soit leur serveur. Avec Emojiful, les reactions sont de vraies emojis ;
- * sans lui, des symboles.
+ * meme chez tous les joueurs quel que soit leur serveur. Les reactions sont des emojis du mod (voir {@link Emojis}).
  */
 public final class Reactions {
 
     /** Ordre d'affichage. */
     public static final List<String> EMOJIS = List.of("like", "laugh", "love", "wow", "sad");
-    private static final Map<String, String> EMOJIFUL = Map.of(
-            "like", ":thumbsup:", "laugh", ":joy:", "love", ":heart:", "wow", ":open_mouth:", "sad", ":cry:");
-    private static final Map<String, String> SYMBOLS = Map.of(
-            "like", "✔", "laugh", "☺", "love", "❤", "wow", "✦", "sad", "☹");
+    private static final Map<String, String> NAMES = Map.of(
+            "like", "+1", "laugh", "joy", "love", "heart", "wow", "open_mouth", "sad", "cry");
 
     /** Empreinte -> reaction -> joueurs qui l'ont mise. */
     private static final Map<String, Map<String, Set<String>>> STATE = new LinkedHashMap<>();
@@ -42,7 +38,7 @@ public final class Reactions {
     }
 
     public static String glyph(String emoji) {
-        return (ModList.get().isLoaded("emojiful") ? EMOJIFUL : SYMBOLS).getOrDefault(emoji, "?");
+        return Emojis.glyph(NAMES.getOrDefault(emoji, ""));
     }
 
     /** Empreinte d'un message : auteur + texte apres "Pseudo: " (identique d'un serveur a l'autre). Null sans auteur. */
@@ -97,8 +93,10 @@ public final class Reactions {
                 continue;
             }
             Component hover = Component.literal(String.join(", ", names)).withStyle(ChatFormatting.GRAY);
-            out.append(Component.literal(" " + glyph(emoji) + " " + names.size()).withStyle(style -> style
-                    .withColor(ChatFormatting.GRAY).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))));
+            // Le glyphe reste en blanc : Minecraft le multiplierait par la couleur du texte.
+            out.append(Component.literal(" ").append(Component.literal(glyph(emoji)).withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(" " + names.size()).withStyle(ChatFormatting.GRAY))
+                    .withStyle(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))));
         }
         return out;
     }

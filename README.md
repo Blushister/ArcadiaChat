@@ -41,3 +41,7 @@ Les serveurs de test sont ceux d'ArcadiaBridge (`./gradlew runServer` et `runSer
 
 GNU Lesser General Public License v3.0 (LGPL-3.0-only) : voir [`COPYING.LESSER`](COPYING.LESSER), qui complète
 la GNU GPL v3 fournie dans [`COPYING`](COPYING).
+
+## Credits
+
+Emoji graphics by [Twemoji](https://github.com/jdecked/twemoji), Copyright 2020 Twitter, Inc and other contributors, licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) and arranged into font sheets. Emoji names from [emoji-data](https://github.com/iamcal/emoji-data) (MIT).

@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 
 import com.arcadia.chat.ChatConfig;
 import com.arcadia.chat.client.Drafts;
+import com.arcadia.chat.client.Emojis;
 import com.arcadia.chat.client.Reactions;
 import com.arcadia.chat.net.ClientNetwork;
 import com.arcadia.chat.net.TabsProtocol;
@@ -329,7 +330,8 @@ public final class TabState {
      * Heure du message (en tete de ligne en option, et au survol, avec le serveur d'origine s'il vient d'ailleurs) ;
      * mention du joueur mise en valeur.
      */
-    public static Component decorate(Component content) {
+    public static Component decorate(Component received) {
+        Component content = Emojis.apply(received);
         String time = LocalTime.now().format(CLOCK);
         Incoming in = currentMessage(content);
         Component result = isMention(content, in) ? highlightMention(content) : content;

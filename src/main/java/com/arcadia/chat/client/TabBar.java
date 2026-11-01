@@ -46,6 +46,8 @@ public final class TabBar {
     private static int channelsX = -1;
     /** Bouton du panel staff, a la suite ; -1 s'il n'est pas propose. */
     private static int panelX = -1;
+    /** Bouton du selecteur d'emojis. */
+    private static int emojiX = -1;
 
     private static final List<Slot> slots = new ArrayList<>();
     private static int top;
@@ -108,6 +110,11 @@ public final class TabBar {
                     panelHover ? TEXT_ACTIVE : TEXT_MENTION);
             x += GEAR_WIDTH + GAP;
         }
+        emojiX = x;
+        boolean emojiHover = contains(emojiX, GEAR_WIDTH, mouseX, mouseY);
+        graphics.fill(emojiX, top, emojiX + GEAR_WIDTH, top + HEIGHT, emojiHover || EmojiPicker.isOpen() ? BG_HOVER : BG_IDLE);
+        graphics.drawString(font, Emojis.glyph("smile"), emojiX + 3, top + 2, TEXT_ACTIVE, false);
+        x += GEAR_WIDTH + GAP;
         int end = x;
         limit = screenWidth - 2;
 
@@ -136,6 +143,10 @@ public final class TabBar {
             mc.setScreen(new ChannelsScreen(mc.screen));
             return true;
         }
+        if (emojiX >= 0 && button == 0 && contains(emojiX, GEAR_WIDTH, mouseX, mouseY)) {
+            EmojiPicker.toggle();
+            return true;
+        }
         if (panelX >= 0 && button == 0 && contains(panelX, GEAR_WIDTH, mouseX, mouseY)) {
             Minecraft mc = Minecraft.getInstance();
             mc.setScreen(new StaffPanelScreen(mc.screen));
@@ -152,6 +163,10 @@ public final class TabBar {
             }
         }
         return false;
+    }
+
+    public static boolean isEmojiButton(double mouseX, double mouseY) {
+        return emojiX >= 0 && contains(emojiX, GEAR_WIDTH, mouseX, mouseY);
     }
 
     private static boolean contains(int x, int width, double mouseX, double mouseY) {
