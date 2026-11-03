@@ -69,7 +69,7 @@ public final class ChatHeads {
         return found;
     }
 
-    private static boolean containsWord(String text, String word) {
+    public static boolean containsWord(String text, String word) {
         for (int i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + 1)) {
             int end = i + word.length();
             if ((i == 0 || !isNameChar(text.charAt(i - 1))) && (end == text.length() || !isNameChar(text.charAt(end)))) {

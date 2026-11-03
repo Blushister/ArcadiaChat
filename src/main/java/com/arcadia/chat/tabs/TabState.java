@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.arcadia.chat.ChatConfig;
+import com.arcadia.chat.client.ChatHeads;
 import com.arcadia.chat.client.Drafts;
 import com.arcadia.chat.client.Emojis;
 import com.arcadia.chat.client.Reactions;
@@ -207,7 +208,39 @@ public final class TabState {
 
     /** Fixe la categorie (et l'auteur, s'il est connu) du message que le chat va recevoir juste apres. */
     public static void expect(Category category, String key, String sender) {
-        pending = forced != null ? forced : new Incoming(category, key == null ? "" : key, sender == null ? "" : sender, "");
+        pending = forced != null ? forced : new Incoming(category, conversationKey(category, key), playerName(sender), "");
+    }
+
+    /** Clef d'un message : pour une conversation privee, c'est a ce pseudo que /msg repondra. */
+    private static String conversationKey(Category category, String key) {
+        return category == Category.PRIVATE ? playerName(key) : key == null ? "" : key;
+    }
+
+    /**
+     * Pseudo reel derriere un nom d'affichage, qui peut porter un grade ("[Owner]  Dev") : le joueur connecte qu'il
+     * contient (le nom le plus long), sinon son dernier mot s'il a la forme d'un pseudo, sinon le nom tel quel.
+     */
+    private static String playerName(String display) {
+        if (display == null || display.isBlank()) {
+            return "";
+        }
+        String clean = ChatFormatting.stripFormatting(display).trim();
+        List<String> known = new ArrayList<>(remotePlayers);
+        var connection = Minecraft.getInstance().getConnection();
+        if (connection != null) {
+            connection.getOnlinePlayers().forEach(info -> known.add(info.getProfile().getName()));
+        }
+        String found = "";
+        for (String name : known) {
+            if (name.length() > found.length() && ChatHeads.containsWord(clean, name)) {
+                found = name;
+            }
+        }
+        if (!found.isEmpty()) {
+            return found;
+        }
+        String last = clean.substring(clean.lastIndexOf(' ') + 1);
+        return last.matches("[A-Za-z0-9_]{1,16}") ? last : clean;
     }
 
     /**
@@ -215,7 +248,7 @@ public final class TabState {
      * de chat la traitent comme d'habitude), avec la categorie donnee par le serveur.
      */
     public static void receiveTagged(Category category, String key, String sender, String origin, Runnable delivery) {
-        forced = new Incoming(category, key == null ? "" : key, sender == null ? "" : sender, origin == null ? "" : origin);
+        forced = new Incoming(category, conversationKey(category, key), playerName(sender), origin == null ? "" : origin);
         pending = forced;
         try {
             delivery.run();
