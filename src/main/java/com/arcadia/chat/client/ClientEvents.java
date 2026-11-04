@@ -222,10 +222,22 @@ public final class ClientEvents {
      */
     @SubscribeEvent
     public static void onKey(ScreenEvent.KeyPressed.Pre event) {
-        if (!(event.getScreen() instanceof ChatScreen screen) || !TabState.isEnabled()) {
+        if (!(event.getScreen() instanceof ChatScreen screen)) {
             return;
         }
         int key = event.getKeyCode();
+        // Minecraft teste la position de la touche sur un clavier QWERTY : sur AZERTY, son Ctrl+A est le Ctrl+Q.
+        if (Screen.hasControlDown() && !Screen.hasShiftDown() && !Screen.hasAltDown()
+                && "a".equalsIgnoreCase(GLFW.glfwGetKeyName(key, event.getScanCode()))
+                && screen.getFocused() instanceof EditBox box) {
+            box.moveCursorToEnd(false);
+            box.setHighlightPos(0);
+            event.setCanceled(true);
+            return;
+        }
+        if (!TabState.isEnabled()) {
+            return;
+        }
         if (key == GLFW.GLFW_KEY_ESCAPE && EmojiPicker.isOpen()) {
             EmojiPicker.close();
             event.setCanceled(true);
