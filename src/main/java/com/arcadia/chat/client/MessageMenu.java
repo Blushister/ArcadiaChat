@@ -25,11 +25,6 @@ public final class MessageMenu {
 
     private static final int ITEM_HEIGHT = 12;
     private static final int PADDING = 4;
-    private static final int BACKGROUND = 0xFF101010;
-    private static final int BORDER = 0xFF5A4A8A;
-    private static final int HOVER = 0xFF3A2F5F;
-    private static final int TEXT = 0xFFE0E0E0;
-    private static final int TITLE = 0xFFFFAA00;
 
     private record Item(Component label, Runnable action) {
     }
@@ -100,11 +95,15 @@ public final class MessageMenu {
             TabsProtocol.ServerInfo server = TabState.server(origin);
             list.add(new Item(Component.translatable("arcadiachat.menu.join", server.name()), () -> ServerJoin.confirm(origin)));
         }
+        if (meta != null && meta.alternate() != null) {
+            list.add(new Item(Component.translatable(meta.translated() ? "arcadiachat.translation.show_original" : "arcadiachat.translation.show_translation"),
+                    () -> TabState.toggleOriginal(message)));
+        }
         String text = Emojis.toOriginal(message.content().getString());
         list.add(new Item(Component.translatable("arcadiachat.menu.copy"),
                 () -> mc.keyboardHandler.setClipboard(text)));
         if (other && TabState.isStaff()) {
-            list.add(new Item(Component.translatable("arcadiachat.menu.history", sender), () -> command("arcadia_history " + sender)));
+            list.add(new Item(Component.translatable("arcadiachat.menu.history", sender), () -> HistoryPopup.open(sender, x, y)));
             list.add(new Item(Component.translatable("arcadiachat.menu.mute", sender), () -> {
                 input.setValue("/arcadia_tempmute " + sender + " 1h ");
                 screen.setFocused(input);
@@ -132,12 +131,13 @@ public final class MessageMenu {
             return;
         }
         Font font = Minecraft.getInstance().font;
+        ChatTheme theme = ChatTheme.current();
         int height = (items.size() + headerLines()) * ITEM_HEIGHT + PADDING;
         graphics.pose().pushPose();
         graphics.pose().translate(0, 0, 400);
-        graphics.fill(x - 1, y - 1, x + width + 1, y + height + 1, BORDER);
-        graphics.fill(x, y, x + width, y + height, BACKGROUND);
-        graphics.drawString(font, title, x + PADDING, y + 3, TITLE, false);
+        graphics.fill(x + 1, y + 2, x + width + 3, y + height + 3, 0x40000000);
+        Ui.framed(graphics, x - 1, y - 1, width + 2, height + 2, theme.field, theme.outline);
+        graphics.drawString(font, title, x + PADDING, y + 3, theme.accent, false);
         if (reactionKey != null) {
             String self = selfName();
             int rowTop = y + ITEM_HEIGHT + 2;
@@ -146,7 +146,7 @@ public final class MessageMenu {
                 int cellX = x + PADDING + i * CELL;
                 boolean hover = mouseX >= cellX && mouseX < cellX + CELL && mouseY >= rowTop && mouseY < rowTop + ITEM_HEIGHT;
                 if (hover || Reactions.hasReacted(reactionKey, emoji, self)) {
-                    graphics.fill(cellX, rowTop, cellX + CELL - 2, rowTop + ITEM_HEIGHT, hover ? HOVER : 0xFF2A4A2A);
+                    Ui.pill(graphics, cellX, rowTop, CELL - 2, ITEM_HEIGHT, hover ? theme.hover : theme.selected);
                 }
                 graphics.drawString(font, Reactions.glyph(emoji), cellX + 3, rowTop + 2, 0xFFFFFFFF, false);
             }
@@ -154,9 +154,9 @@ public final class MessageMenu {
         for (int i = 0; i < items.size(); i++) {
             int top = y + (i + headerLines()) * ITEM_HEIGHT + 2;
             if (mouseX >= x && mouseX < x + width && mouseY >= top && mouseY < top + ITEM_HEIGHT) {
-                graphics.fill(x, top, x + width, top + ITEM_HEIGHT, HOVER);
+                Ui.pill(graphics, x + 1, top, width - 2, ITEM_HEIGHT, theme.hover);
             }
-            graphics.drawString(font, items.get(i).label(), x + PADDING, top + 2, TEXT, false);
+            graphics.drawString(font, items.get(i).label(), x + PADDING, top + 2, theme.text, false);
         }
         graphics.pose().popPose();
     }

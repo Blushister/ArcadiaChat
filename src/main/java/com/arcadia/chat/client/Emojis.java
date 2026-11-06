@@ -118,6 +118,11 @@ public final class Emojis {
     }
 
     /** Texte copiable : les caracteres prives de la police redeviennent les vrais emojis. */
+    /** Texte brut avec ses :nom: remplaces par leur emoji. */
+    public static String applyText(String text) {
+        return apply(Component.literal(text)).getString();
+    }
+
     public static String toOriginal(String text) {
         load();
         StringBuilder out = new StringBuilder(text.length());

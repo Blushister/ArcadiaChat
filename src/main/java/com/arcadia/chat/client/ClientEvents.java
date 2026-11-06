@@ -23,6 +23,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.RenderNameTagEvent;
+import net.neoforged.neoforge.client.event.RenderTooltipEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.lwjgl.glfw.GLFW;
@@ -128,6 +129,36 @@ public final class ClientEvents {
 
     // ---------------------------------------------------------------- ecran du chat
 
+    /** Touche du chat : l'ecran facon Discord s'ouvre a la place du chat habituel si le joueur l'a choisi. */
+    @SubscribeEvent
+    public static void onScreenOpening(ScreenEvent.Opening event) {
+        if (event.getNewScreen() != null && event.getNewScreen().getClass() == ChatScreen.class
+                && ChatConfig.ROOMS_VIEW.get() && ChatRooms.available() && RoomsUi.installed()
+                && ((ChatScreenAccessor) event.getNewScreen()).arcadiachat$initial().isEmpty()) {
+            event.setNewScreen(RoomsUi.create(""));
+        }
+    }
+
+    /** Les bulles d'aide des ecrans du mod suivent le theme ; leur texte reste clair, sur un fond toujours sombre. */
+    @SubscribeEvent
+    public static void onTooltipColor(RenderTooltipEvent.Color event) {
+        Screen screen = Minecraft.getInstance().screen;
+        if (RoomsUi.isRooms(screen) || screen instanceof ThemedScreen || screen instanceof ThemedConfirmScreen) {
+            ChatTheme theme = ChatTheme.current();
+            event.setBackground(theme == ChatTheme.LIGHT ? 0xF0202028 : theme.field);
+            event.setBorderStart(theme.outline);
+            event.setBorderEnd(theme.outline);
+        }
+    }
+
+    /** Sous l'ecran facon Discord, le chat du jeu ne se dessine pas. */
+    @SubscribeEvent
+    public static void onGuiLayerPre(RenderGuiLayerEvent.Pre event) {
+        if (VanillaGuiLayers.CHAT.equals(event.getName()) && RoomsUi.isRooms(Minecraft.getInstance().screen)) {
+            event.setCanceled(true);
+        }
+    }
+
     @SubscribeEvent
     public static void onScreenInit(ScreenEvent.Init.Post event) {
         if (!(event.getScreen() instanceof ChatScreen screen)) {
@@ -162,11 +193,41 @@ public final class ClientEvents {
         ChatBubbles.render(event);
     }
 
+    // ---------------------------------------------------------------- sous-menu de l'historique, sur tous les ecrans
+
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST)
+    public static void onHistoryRender(ScreenEvent.Render.Post event) {
+        HistoryPopup.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY());
+    }
+
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
+    public static void onHistoryClick(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (HistoryPopup.click(event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
+    public static void onHistoryKey(ScreenEvent.KeyPressed.Pre event) {
+        if (event.getKeyCode() == GLFW.GLFW_KEY_ESCAPE && HistoryPopup.isOpen()) {
+            HistoryPopup.close();
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
+    public static void onHistoryScroll(ScreenEvent.MouseScrolled.Pre event) {
+        if (HistoryPopup.scroll(event.getMouseX(), event.getMouseY(), event.getScrollDeltaY())) {
+            event.setCanceled(true);
+        }
+    }
+
     /** "... ecrit" sous les messages du chat, chat ouvert ou ferme. */
     @SubscribeEvent
     public static void onGuiLayer(RenderGuiLayerEvent.Post event) {
         if (VanillaGuiLayers.CHAT.equals(event.getName())) {
             TypingIndicator.render(event.getGuiGraphics());
+            ChatToasts.render(event.getGuiGraphics());
         }
     }
 
@@ -177,12 +238,27 @@ public final class ClientEvents {
             ChatOverlay.render(event.getGuiGraphics(), screen.height, event.getMouseX(), event.getMouseY());
             EmojiPicker.render(event.getGuiGraphics(), screen.width, screen.height, event.getMouseX(), event.getMouseY());
             MessageMenu.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY());
+            if (ChatRooms.available() && RoomsUi.installed()) {
+                ViewSwitch.render(event.getGuiGraphics(), 2, 2, event.getMouseX(), event.getMouseY());
+                if (ViewSwitch.contains(2, 2, event.getMouseX(), event.getMouseY())) {
+                    event.getGuiGraphics().renderTooltip(Minecraft.getInstance().font,
+                            Component.translatable("arcadiachat.rooms.to_rooms"), event.getMouseX(), event.getMouseY());
+                }
+            }
         }
     }
 
     @SubscribeEvent
     public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (event.isCanceled()) {
+            return;
+        }
         if (!(event.getScreen() instanceof ChatScreen screen) || !TabState.isEnabled()) {
+            return;
+        }
+        if (event.getButton() == 0 && ChatRooms.available() && RoomsUi.installed() && ViewSwitch.contains(2, 2, event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            ViewSwitch.toRooms(((ChatScreenAccessor) screen).arcadiachat$input().getValue());
             return;
         }
         // Menu ouvert : le clic le ferme (et lance l'action touchee).
@@ -297,6 +373,8 @@ public final class ClientEvents {
             TabState.Target target = TabState.target();
             now = !value.isBlank() && !value.startsWith("/")
                     && (target == TabState.Target.GLOBAL || target == TabState.Target.LOCAL);
+        } else if (RoomsUi.isRooms(Minecraft.getInstance().screen)) {
+            now = !RoomsUi.typingText(Minecraft.getInstance().screen).isBlank();
         }
         long time = System.currentTimeMillis();
         if (now && (!typing || time - typingSentAt > TYPING_REFRESH_MS)) {

@@ -11,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.chat.Component;
@@ -24,12 +23,12 @@ import net.minecraft.network.chat.MutableComponent;
  * <p>Chaque action passe par les commandes /canal du serveur : les permissions et les verifications restent
  * celles du serveur, l'ecran ne fait que les rendre accessibles.
  */
-public final class ChannelsScreen extends Screen {
+public final class ChannelsScreen extends ThemedScreen {
 
     private static final Pattern NAME = Pattern.compile("[a-z0-9_-]{2,24}");
     /** Nombre maximal de canaux par page ; moins si l'ecran manque de hauteur. */
     private static final int MAX_ROWS = 7;
-    private static final int TOP = 40;
+    private static final int TOP = 36;
     /** Hauteur de la section de gestion (titre et trois lignes de boutons). */
     private static final int MANAGE_HEIGHT = 84;
     private static final int ROW_HEIGHT = 22;
@@ -37,7 +36,6 @@ public final class ChannelsScreen extends Screen {
     /** Delai avant de relire la liste apres une action (le serveur repond en base, de facon asynchrone). */
     private static final int REFRESH_TICKS = 10;
 
-    private final Screen parent;
     private List<TabsProtocol.ChannelEntry> channels = List.of();
     private boolean manager;
     private boolean loaded;
@@ -55,8 +53,7 @@ public final class ChannelsScreen extends Screen {
     private EditBox players;
 
     public ChannelsScreen(Screen parent) {
-        super(Component.translatable("arcadiachat.channels.title"));
-        this.parent = parent;
+        super(Component.translatable("arcadiachat.channels.title"), parent);
     }
 
     /** Ecran ouvert, s'il l'est : pour lui transmettre la liste recue du serveur. */
@@ -82,6 +79,7 @@ public final class ChannelsScreen extends Screen {
 
     @Override
     protected void init() {
+        font = UiFont.get();
         if (!loaded) {
             ClientNetwork.requestChannels();
         }
@@ -101,7 +99,7 @@ public final class ChannelsScreen extends Screen {
             }
             TabsProtocol.ChannelEntry entry = channels.get(index);
             int y = top + i * ROW_HEIGHT;
-            Button nameButton = Button.builder(rowLabel(entry), b -> {
+            Button nameButton = FlatButton.of(rowLabel(entry), b -> {
                 selected = entry.name();
                 rebuildWidgets();
             }).bounds(left, y, 200, 20).build();
@@ -110,10 +108,10 @@ public final class ChannelsScreen extends Screen {
 
             Button action;
             if (entry.member()) {
-                action = Button.builder(Component.translatable("arcadiachat.channels.leave"),
+                action = FlatButton.of(Component.translatable("arcadiachat.channels.leave"),
                         b -> run("canal leave " + entry.name())).bounds(left + 204, y, 116, 20).build();
             } else {
-                action = Button.builder(Component.translatable(entry.isPrivate()
+                action = FlatButton.of(Component.translatable(entry.isPrivate()
                         ? "arcadiachat.channels.private" : "arcadiachat.channels.join"),
                         b -> run("canal join " + entry.name())).bounds(left + 204, y, 116, 20).build();
                 action.active = !entry.isPrivate();
@@ -123,12 +121,12 @@ public final class ChannelsScreen extends Screen {
         int pages = Math.max(1, (channels.size() + rows - 1) / rows);
         int pagerY = top + rows * ROW_HEIGHT;
         if (pages > 1) {
-            Button previous = Button.builder(Component.literal("<"), b -> {
+            Button previous = FlatButton.of(Component.literal("<"), b -> {
                 page--;
                 rebuildWidgets();
             }).bounds(left, pagerY, 20, 20).build();
             previous.active = page > 0;
-            Button next = Button.builder(Component.literal(">"), b -> {
+            Button next = FlatButton.of(Component.literal(">"), b -> {
                 page++;
                 rebuildWidgets();
             }).bounds(left + WIDTH - 20, pagerY, 20, 20).build();
@@ -140,18 +138,18 @@ public final class ChannelsScreen extends Screen {
         // ---- gestion (staff)
         if (manager) {
             int y = manageTop + 12;
-            newName = new EditBox(font, left, y, 150, 20, Component.translatable("arcadiachat.channels.new_name"));
+            newName = FlatEditBox.framed(font, left, y, 150, 20, Component.translatable("arcadiachat.channels.new_name"));
             newName.setHint(Component.translatable("arcadiachat.channels.new_name").withStyle(ChatFormatting.DARK_GRAY));
             newName.setMaxLength(24);
             newName.setValue(newNameText);
             newName.setResponder(value -> newNameText = value);
             addRenderableWidget(newName);
-            addRenderableWidget(Button.builder(Component.translatable(newPrivate
+            addRenderableWidget(FlatButton.of(Component.translatable(newPrivate
                     ? "arcadiachat.channels.mode_private" : "arcadiachat.channels.mode_public"), b -> {
                 newPrivate = !newPrivate;
                 rebuildWidgets();
             }).bounds(left + 154, y, 74, 20).build());
-            addRenderableWidget(Button.builder(Component.translatable("arcadiachat.channels.create"), b -> {
+            addRenderableWidget(FlatButton.of(Component.translatable("arcadiachat.channels.create"), b -> {
                 String name = newNameText.trim().toLowerCase(Locale.ROOT).replaceFirst("^#", "");
                 if (NAME.matcher(name).matches()) {
                     run("canal create " + name + (newPrivate ? " prive" : " public"));
@@ -162,13 +160,13 @@ public final class ChannelsScreen extends Screen {
             }).bounds(left + 232, y, 88, 20).build());
 
             y += 24;
-            players = new EditBox(font, left, y, 150, 20, Component.translatable("arcadiachat.channels.players"));
+            players = FlatEditBox.framed(font, left, y, 150, 20, Component.translatable("arcadiachat.channels.players"));
             players.setHint(Component.translatable("arcadiachat.channels.players").withStyle(ChatFormatting.DARK_GRAY));
             players.setMaxLength(200);
             players.setValue(playersText);
             players.setResponder(value -> playersText = value);
             addRenderableWidget(players);
-            Button add = Button.builder(Component.translatable("arcadiachat.channels.add", selectedLabel()), b -> {
+            Button add = FlatButton.of(Component.translatable("arcadiachat.channels.add", selectedLabel()), b -> {
                 if (selected != null && !playersText.isBlank()) {
                     run("canal add " + selected + " " + playersText.trim());
                     playersText = "";
@@ -179,18 +177,18 @@ public final class ChannelsScreen extends Screen {
             addRenderableWidget(add);
 
             y += 24;
-            Button members = Button.builder(Component.translatable("arcadiachat.channels.members", selectedLabel()),
+            Button members = FlatButton.of(Component.translatable("arcadiachat.channels.members", selectedLabel()),
                     b -> run("canal members " + selected)).bounds(left, y, 158, 20).build();
             members.active = selected != null;
             addRenderableWidget(members);
-            Button delete = Button.builder(Component.translatable("arcadiachat.channels.delete", selectedLabel()),
+            Button delete = FlatButton.of(Component.translatable("arcadiachat.channels.delete", selectedLabel()),
                     b -> confirmDelete()).bounds(left + 162, y, 158, 20).build();
             delete.active = selected != null;
             addRenderableWidget(delete);
         }
 
-        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-                .bounds(width / 2 - 100, height - 26, 200, 20).build());
+        addRenderableWidget(FlatButton.of(Component.translatable("gui.done"), b -> onClose())
+                .bounds(width / 2 - 100, height - 26, 200, 20).primary().build());
     }
 
     private Component rowLabel(TabsProtocol.ChannelEntry entry) {
@@ -218,7 +216,7 @@ public final class ChannelsScreen extends Screen {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new ConfirmScreen(yes -> {
+        mc.setScreen(new ThemedConfirmScreen(yes -> {
             if (yes) {
                 run("canal delete " + name);
                 selected = null;
@@ -247,25 +245,20 @@ public final class ChannelsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(font, title, width / 2, 10, 0xFFFFFF);
-        graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.feedback")
-                .withStyle(ChatFormatting.GRAY), width / 2, 24, 0xFFFFFF);
-        int left = width / 2 - WIDTH / 2;
-        if (!loaded) {
-            graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.loading"), width / 2, TOP + 6, 0xAAAAAA);
-        } else if (channels.isEmpty()) {
-            graphics.drawCenteredString(font, Component.translatable("arcadiachat.channels.none"), width / 2, TOP + 6, 0xAAAAAA);
-        }
-        if (manager) {
-            graphics.drawString(font, Component.translatable("arcadiachat.channels.manage")
-                    .withStyle(ChatFormatting.GOLD), left, manageTop, 0xFFFFFF);
-        }
+    protected void drawHeader(GuiGraphics graphics, int mouseX, int mouseY) {
+        Component hint = Component.translatable("arcadiachat.channels.feedback");
+        graphics.drawString(font, hint, width - font.width(hint) - 8, (HEADER - 8) / 2, theme.muted, false);
     }
 
     @Override
-    public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+    protected void drawContent(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (!loaded) {
+            centered(graphics, Component.translatable("arcadiachat.channels.loading"), TOP + 6, theme.muted);
+        } else if (channels.isEmpty()) {
+            centered(graphics, Component.translatable("arcadiachat.channels.none"), TOP + 6, theme.muted);
+        }
+        if (manager) {
+            graphics.drawString(font, Component.translatable("arcadiachat.channels.manage"), width / 2 - WIDTH / 2, manageTop, theme.accent, false);
+        }
     }
 }

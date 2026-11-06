@@ -1,0 +1,17 @@
+ArcadiaChat and ArcadiaChat Rooms
+Copyright (c) 2026 Team Arcadia. All rights reserved.
+
+The source code is published so that it can be read and reviewed. No permission is granted to copy, modify,
+redistribute, sublicense or sell this software, in whole or in part, without the written permission of Team Arcadia.
+
+The mod files may be downloaded from the official CurseForge pages and used as distributed, including in modpacks
+that link to those pages.
+
+Versions published before this notice remain available under the GNU Lesser General Public License v3.0, under
+which they were released.
+
+Third-party components keep their own licenses:
+- Emoji graphics: Twemoji, Copyright 2020 Twitter, Inc and other contributors, CC-BY 4.0
+  (https://creativecommons.org/licenses/by/4.0/). Emoji names from emoji-data (MIT).
+- Lato font: Copyright (c) 2011-2015 by tyPoland Lukasz Dziedzic, SIL Open Font License 1.1
+  (see assets/arcadiachat/font/lato-ofl.txt).

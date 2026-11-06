@@ -17,11 +17,6 @@ import net.minecraft.util.FormattedCharSequence;
  */
 public final class ChatOverlay {
 
-    private static final int PIN_BACKGROUND = 0xD0201A08;
-    private static final int PIN_ACCENT = 0xFFFFAA00;
-    private static final int BUTTON = 0xE0303A60;
-    private static final int BUTTON_HOVER = 0xF0405090;
-    private static final int TEXT = 0xFFFFFFFF;
 
     /** Position du bouton "nouveaux messages" au dernier affichage ; largeur 0 : pas de bouton. */
     private static int buttonX;
@@ -54,8 +49,9 @@ public final class ChatOverlay {
         boolean hover = contains(mouseX, mouseY);
         graphics.pose().pushPose();
         graphics.pose().translate(0, 0, 200);
-        graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 12, hover ? BUTTON_HOVER : BUTTON);
-        graphics.drawString(font, label, buttonX + 5, buttonY + 2, TEXT, false);
+        ChatTheme theme = ChatTheme.current();
+        Ui.pill(graphics, buttonX, buttonY, buttonWidth, 12, hover ? theme.strong : theme.accent);
+        graphics.drawString(font, label, buttonX + 5, buttonY + 2, theme.onAccent, false);
         graphics.pose().popPose();
     }
 
@@ -75,12 +71,13 @@ public final class ChatOverlay {
         int top = Math.max(2, chatTop - lines * lineHeight - 4);
         graphics.pose().pushPose();
         graphics.pose().translate(0, 0, 150);
-        graphics.fill(0, top, chatWidth, top + lines * lineHeight + 2, PIN_BACKGROUND);
-        graphics.fill(0, top, 2, top + lines * lineHeight + 2, PIN_ACCENT);
+        ChatTheme theme = ChatTheme.current();
+        graphics.fill(0, top, chatWidth, top + lines * lineHeight + 2, (theme.pinBackground & 0xFFFFFF) | 0xD0000000);
+        graphics.fill(0, top, 2, top + lines * lineHeight + 2, theme.accent);
         int y = top + 2;
         for (Component pin : pins) {
             for (FormattedCharSequence line : font.split(pin, chatWidth - 10)) {
-                graphics.drawString(font, line, 6, y, TEXT, false);
+                graphics.drawString(font, theme.adapt(line), 6, y, theme.pinText, false);
                 y += lineHeight;
             }
         }

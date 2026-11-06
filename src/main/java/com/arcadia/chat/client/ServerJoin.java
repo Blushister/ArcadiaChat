@@ -5,7 +5,6 @@ import com.arcadia.chat.tabs.TabState;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
@@ -43,7 +42,7 @@ public final class ServerJoin {
             return;
         }
         TabsProtocol.ServerInfo server = TabState.server(id);
-        mc.setScreen(new ConfirmScreen(accepted -> {
+        mc.setScreen(new ThemedConfirmScreen(accepted -> {
             if (accepted) {
                 join(server);
             } else {

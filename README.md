@@ -39,8 +39,9 @@ Les serveurs de test sont ceux d'ArcadiaBridge (`./gradlew runServer` et `runSer
 
 ## Licence
 
-GNU Lesser General Public License v3.0 (LGPL-3.0-only) : voir [`COPYING.LESSER`](COPYING.LESSER), qui complète
-la GNU GPL v3 fournie dans [`COPYING`](COPYING).
+Tous droits réservés (voir [`LICENSE`](LICENSE)) : le code est publié pour être lu, pas pour être repris, modifié ou
+redistribué sans l'accord de Team Arcadia. Les versions publiées auparavant restent sous LGPL v3.0, la licence sous
+laquelle elles sont sorties. Les emojis (Twemoji, CC-BY 4.0) et la police Lato (SIL OFL 1.1) gardent leur licence.
 
 ## Credits
 

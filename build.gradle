@@ -52,9 +52,9 @@ neoForge {
     }
 }
 
-// Textes de la licence (LGPL 3, qui complete la GPL 3) livres avec le mod
+// Licence (tous droits reserves) et mentions des composants tiers, livrees avec le mod
 jar {
-    from(file('COPYING'), file('COPYING.LESSER'))
+    from(file('LICENSE'))
 }
 
 var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {

@@ -27,14 +27,6 @@ public final class TabBar {
     private static final int PADDING = 4;
     private static final int GAP = 2;
 
-    private static final int BG_ACTIVE = 0xE0000000;
-    private static final int BG_IDLE = 0x80000000;
-    private static final int BG_HOVER = 0xB0000000;
-    private static final int BG_MENTION = 0xC0704000;
-    private static final int ACCENT = 0xFFFFAA00;
-    private static final int TEXT_ACTIVE = 0xFFFFFFFF;
-    private static final int TEXT_IDLE = 0xFFAAAAAA;
-    private static final int TEXT_MENTION = 0xFFFFDD55;
 
     private record Slot(ChatTab tab, int x, int width) {
     }
@@ -59,14 +51,21 @@ public final class TabBar {
         return screenHeight - OFFSET_FROM_BOTTOM;
     }
 
+    private static int alpha(int color, int alpha) {
+        return (color & 0xFFFFFF) | alpha << 24;
+    }
+
     /** @return l'abscisse ou s'arrete la barre d'onglets */
     public static int render(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
         Font font = Minecraft.getInstance().font;
+        ChatTheme theme = ChatTheme.current();
+        int idle = alpha(theme.rail, 0xB0);
+        int hovered = alpha(theme.hover, 0xE0);
         top = top(screenHeight);
         slots.clear();
-        // Place gardee pour la roue dentee, dessinee juste apres le dernier onglet : le coin droit de l'ecran
+        // Place gardee pour les boutons, dessines juste apres le dernier onglet : le coin droit de l'ecran
         // est souvent pris par les boutons d'autres mods (No Chat Reports...).
-        int limit = screenWidth - 2 - GEAR_WIDTH - GAP;
+        int limit = screenWidth - 2 - (GEAR_WIDTH + GAP) * 4;
         int x = 2;
         for (ChatTab tab : TabState.visibleTabs()) {
             Component label = label(tab);
@@ -77,43 +76,31 @@ public final class TabBar {
             boolean active = tab.equals(TabState.active());
             boolean mention = !active && TabState.isMentioned(tab);
             boolean hover = contains(x, width, mouseX, mouseY);
-            int background = active ? BG_ACTIVE : mention ? BG_MENTION : hover ? BG_HOVER : BG_IDLE;
-            graphics.fill(x, top, x + width, top + HEIGHT, background);
+            Ui.pill(graphics, x, top, width, HEIGHT, active ? alpha(theme.selected, 0xF0) : mention ? alpha(theme.accent, 0x70) : hover ? hovered : idle);
             if (active) {
-                graphics.fill(x, top + HEIGHT - 1, x + width, top + HEIGHT, ACCENT);
+                graphics.fill(x + 1, top + HEIGHT - 1, x + width - 1, top + HEIGHT, theme.accent);
             }
-            int color = active ? TEXT_ACTIVE : mention ? TEXT_MENTION : TEXT_IDLE;
-            graphics.drawString(font, label, x + PADDING, top + 2, color, false);
+            int color = active || hover ? theme.strong : mention ? theme.accent : theme.text;
+            graphics.drawString(font, theme.adapt(label.getVisualOrderText()), x + PADDING, top + 2, color, false);
             slots.add(new Slot(tab, x, width));
             x += width + GAP;
         }
         gearX = x;
-        boolean gearHover = contains(gearX, GEAR_WIDTH, mouseX, mouseY);
-        graphics.fill(gearX, top, gearX + GEAR_WIDTH, top + HEIGHT, gearHover ? BG_HOVER : BG_IDLE);
-        graphics.drawCenteredString(font, "⚙", gearX + GEAR_WIDTH / 2 + 1, top + 2, gearHover ? TEXT_ACTIVE : TEXT_MENTION);
-        x += GEAR_WIDTH + GAP;
+        x = iconButton(graphics, x, Ui.GEAR, theme, mouseX, mouseY);
         channelsX = -1;
         if (ClientNetwork.supportsChannelsScreen()) {
             channelsX = x;
-            boolean channelsHover = contains(channelsX, GEAR_WIDTH, mouseX, mouseY);
-            graphics.fill(channelsX, top, channelsX + GEAR_WIDTH, top + HEIGHT, channelsHover ? BG_HOVER : BG_IDLE);
-            graphics.drawCenteredString(font, "#", channelsX + GEAR_WIDTH / 2 + 1, top + 2,
-                    channelsHover ? TEXT_ACTIVE : TEXT_MENTION);
-            x += GEAR_WIDTH + GAP;
+            x = iconButton(graphics, x, Ui.HASH, theme, mouseX, mouseY);
         }
         panelX = -1;
         if (TabState.isStaff() && ClientNetwork.supportsPanel()) {
             panelX = x;
-            boolean panelHover = contains(panelX, GEAR_WIDTH, mouseX, mouseY);
-            graphics.fill(panelX, top, panelX + GEAR_WIDTH, top + HEIGHT, panelHover ? BG_HOVER : BG_IDLE);
-            graphics.drawCenteredString(font, "⚑", panelX + GEAR_WIDTH / 2 + 1, top + 2,
-                    panelHover ? TEXT_ACTIVE : TEXT_MENTION);
-            x += GEAR_WIDTH + GAP;
+            x = iconButton(graphics, x, Ui.SHIELD, theme, mouseX, mouseY);
         }
         emojiX = x;
         boolean emojiHover = contains(emojiX, GEAR_WIDTH, mouseX, mouseY);
-        graphics.fill(emojiX, top, emojiX + GEAR_WIDTH, top + HEIGHT, emojiHover || EmojiPicker.isOpen() ? BG_HOVER : BG_IDLE);
-        graphics.drawString(font, Emojis.glyph("smile"), emojiX + 3, top + 2, TEXT_ACTIVE, false);
+        Ui.pill(graphics, emojiX, top, GEAR_WIDTH, HEIGHT, emojiHover || EmojiPicker.isOpen() ? hovered : idle);
+        graphics.drawString(font, Emojis.glyph("smile"), emojiX + 3, top + 2, 0xFFFFFFFF, false);
         x += GEAR_WIDTH + GAP;
         int end = x;
         limit = screenWidth - 2;
@@ -122,9 +109,17 @@ public final class TabBar {
         int infoX = x + PADDING;
         Component target = TabState.targetLabel();
         if (infoX + font.width(target) < limit) {
-            graphics.drawString(font, target, infoX, top + 2, TEXT_IDLE, false);
+            graphics.fill(infoX - 2, top, infoX + font.width(target) + 2, top + HEIGHT, idle);
+            graphics.drawString(font, target, infoX, top + 2, theme.muted, false);
         }
         return end;
+    }
+
+    private static int iconButton(GuiGraphics graphics, int x, Ui.Icon icon, ChatTheme theme, int mouseX, int mouseY) {
+        boolean hover = contains(x, GEAR_WIDTH, mouseX, mouseY);
+        Ui.pill(graphics, x, top, GEAR_WIDTH, HEIGHT, hover ? alpha(theme.hover, 0xE0) : alpha(theme.rail, 0xB0));
+        Ui.icon(graphics, icon, x + (GEAR_WIDTH - Ui.ICON) / 2, top + (HEIGHT - Ui.ICON) / 2, hover ? theme.strong : theme.muted);
+        return x + GEAR_WIDTH + GAP;
     }
 
     /**
@@ -177,7 +172,7 @@ public final class TabBar {
         MutableComponent label = tab.label(TabState.serverName()).copy();
         int count = TabState.unread(tab);
         if (count > 0) {
-            label.append(Component.literal(" " + (count > 99 ? "99+" : count)).withStyle(ChatFormatting.YELLOW));
+            label.append(Component.literal(" " + (count > 99 ? "99+" : count)).withStyle(ChatFormatting.GOLD));
         }
         return label;
     }

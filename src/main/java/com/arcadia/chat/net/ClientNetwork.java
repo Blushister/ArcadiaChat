@@ -3,6 +3,8 @@ package com.arcadia.chat.net;
 import java.util.List;
 
 import com.arcadia.chat.client.ChannelsScreen;
+import com.arcadia.chat.client.ChatRooms;
+import com.arcadia.chat.client.ChatVoice;
 import com.arcadia.chat.client.StaffPanelScreen;
 import com.arcadia.chat.tabs.Category;
 import com.arcadia.chat.tabs.TabState;
@@ -65,6 +67,25 @@ public final class ClientNetwork {
                 (payload, context) -> TabState.updatePinned(payload.lines()));
         registrar.playToServer(TabsProtocol.PanelRequest.TYPE, TabsProtocol.PanelRequest.STREAM_CODEC, (payload, context) -> { });
         registrar.playToServer(TabsProtocol.PanelAction.TYPE, TabsProtocol.PanelAction.STREAM_CODEC, (payload, context) -> { });
+        registrar.playToClient(TabsProtocol.Rooms.TYPE, TabsProtocol.Rooms.STREAM_CODEC,
+                (payload, context) -> ChatRooms.onRooms(payload.rooms()));
+        registrar.playToClient(TabsProtocol.MessagePush.TYPE, TabsProtocol.MessagePush.STREAM_CODEC,
+                (payload, context) -> ChatRooms.onPush(payload.message()));
+        registrar.playToClient(TabsProtocol.HistoryPage.TYPE, TabsProtocol.HistoryPage.STREAM_CODEC,
+                (payload, context) -> ChatRooms.onPage(payload));
+        registrar.playToClient(TabsProtocol.VoiceState.TYPE, TabsProtocol.VoiceState.STREAM_CODEC,
+                (payload, context) -> ChatVoice.onState(payload));
+        registrar.playToClient(TabsProtocol.Presence.TYPE, TabsProtocol.Presence.STREAM_CODEC,
+                (payload, context) -> ChatRooms.onPresence(payload.servers()));
+        registrar.playToClient(TabsProtocol.Roster.TYPE, TabsProtocol.Roster.STREAM_CODEC,
+                (payload, context) -> ChatRooms.onRoster(payload.players()));
+        registrar.playToClient(TabsProtocol.ServiceStatus.TYPE, TabsProtocol.ServiceStatus.STREAM_CODEC,
+                (payload, context) -> com.arcadia.chat.client.ServiceState.onStatus(payload));
+        registrar.playToClient(TabsProtocol.PlayerHistory.TYPE, TabsProtocol.PlayerHistory.STREAM_CODEC,
+                (payload, context) -> com.arcadia.chat.client.HistoryPopup.onData(payload));
+        registrar.playToServer(TabsProtocol.PlayerHistoryRequest.TYPE, TabsProtocol.PlayerHistoryRequest.STREAM_CODEC, (payload, context) -> { });
+        registrar.playToServer(TabsProtocol.HistoryRequest.TYPE, TabsProtocol.HistoryRequest.STREAM_CODEC, (payload, context) -> { });
+        registrar.playToServer(TabsProtocol.RoomAction.TYPE, TabsProtocol.RoomAction.STREAM_CODEC, (payload, context) -> { });
     }
 
     private static void onLine(TabsProtocol.Line line, IPayloadContext context) {
@@ -126,6 +147,15 @@ public final class ClientNetwork {
         send(new TabsProtocol.React(key, emoji, add));
     }
 
+    public static boolean supportsPlayerHistory() {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        return connection != null && connection.hasChannel(TabsProtocol.PlayerHistoryRequest.TYPE);
+    }
+
+    public static void requestPlayerHistory(String name) {
+        send(new TabsProtocol.PlayerHistoryRequest(name));
+    }
+
     public static boolean supportsReactions() {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         return connection != null && connection.hasChannel(TabsProtocol.React.TYPE);
@@ -144,6 +174,16 @@ public final class ClientNetwork {
     public static boolean supportsPanel() {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         return connection != null && connection.hasChannel(TabsProtocol.PanelRequest.TYPE);
+    }
+
+    /** Ecran facon Discord : une page de messages d'un salon. */
+    public static void requestHistory(String channel, long beforeId, String query) {
+        send(new TabsProtocol.HistoryRequest(channel, beforeId, query));
+    }
+
+    /** Ecran facon Discord : action sur un salon ou un message (voir {@link TabsProtocol.RoomAction}). */
+    public static void roomAction(String kind, String channel, long id, String text) {
+        send(new TabsProtocol.RoomAction(kind, channel, id, text));
     }
 
     public static void sendTyping(boolean typing) {

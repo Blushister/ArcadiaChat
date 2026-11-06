@@ -15,6 +15,9 @@ public final class ChatConfig {
     public static final ModConfigSpec.BooleanValue REMEMBER_TAB;
     public static final ModConfigSpec.ConfigValue<String> LAST_TAB;
     public static final ModConfigSpec.IntValue HISTORY;
+    public static final ModConfigSpec.BooleanValue ROOMS_VIEW;
+    public static final ModConfigSpec.ConfigValue<String> ROOMS_THEME;
+    public static final ModConfigSpec.ConfigValue<String> TRANSLATION;
 
     public static final ModConfigSpec.BooleanValue MENTIONS;
     public static final ModConfigSpec.BooleanValue MENTION_PLAIN_NAME;
@@ -24,6 +27,12 @@ public final class ChatConfig {
     public static final ModConfigSpec.BooleanValue TIMESTAMP_HOVER;
     public static final ModConfigSpec.BooleanValue HEADS;
     public static final ModConfigSpec.BooleanValue GROUP_REPEATS;
+    public static final ModConfigSpec.BooleanValue VOICE_HUD;
+    public static final ModConfigSpec.BooleanValue ABSENCE_SUMMARY;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> UNTRANSLATED_ROOMS;
+    public static final ModConfigSpec.BooleanValue ADDON_HINT_SEEN;
+    public static final ModConfigSpec.BooleanValue TOASTS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> MUTED_ROOMS;
 
     public static final ModConfigSpec.BooleanValue UNSIGNED_CHAT;
     public static final ModConfigSpec.BooleanValue HIDE_UNSECURE_WARNING;
@@ -57,6 +66,13 @@ public final class ChatConfig {
         HISTORY = b.comment("Nombre de messages gardes en memoire (tous onglets confondus) et que l'on peut faire",
                         "defiler dans le chat (Minecraft s'arrete a 100).")
                 .defineInRange("history", 1000, 100, 20000);
+        ROOMS_VIEW = b.comment("Ouvrir l'ecran facon Discord avec la touche du chat, au lieu du chat habituel",
+                        "(sur les serveurs qui le proposent). L'icone en haut a gauche du chat change ce choix.")
+                .define("roomsView", false);
+        ROOMS_THEME = b.comment("Theme de l'ecran des salons : dark (sombre), light (clair) ou arcadia (cuivre et patine).")
+                .define("roomsTheme", "arcadia", o -> "dark".equals(o) || "light".equals(o) || "arcadia".equals(o));
+        TRANSLATION = b.comment("Traduction des messages : auto (langue du jeu), fr, en ou off (toujours l'original).")
+                .define("translation", "auto", o -> "auto".equals(o) || "fr".equals(o) || "en".equals(o) || "off".equals(o));
         b.pop();
 
         b.push("mentions");
@@ -77,6 +93,18 @@ public final class ChatConfig {
                 .define("heads", true);
         GROUP_REPEATS = b.comment("Regrouper les messages identiques qui se suivent en un seul, avec le nombre de repetitions (x3).")
                 .define("groupRepeats", true);
+        UNTRANSLATED_ROOMS = b.comment("Salons dont les messages ne sont jamais traduits (par exemple staff).")
+                .defineListAllowEmpty("untranslatedRooms", List.of(), () -> "", o -> o instanceof String);
+        ABSENCE_SUMMARY = b.comment("A la connexion, une ligne resume ce qui s'est dit pendant l'absence (mentions, messages prives).")
+                .define("absenceSummary", true);
+        ADDON_HINT_SEEN = b.comment("La proposition de l'addon ArcadiaChat Rooms a deja ete montree.")
+                .define("addonHintSeen", false);
+        VOICE_HUD = b.comment("En jeu, afficher le salon vocal et qui parle (en haut a gauche).")
+                .define("voiceHud", true);
+        TOASTS = b.comment("En jeu, une petite alerte pour les messages prives et les mentions.")
+                .define("toasts", true);
+        MUTED_ROOMS = b.comment("Salons rendus muets dans l'ecran des salons : ni compteur, ni alerte.")
+                .defineListAllowEmpty("mutedRooms", List.of(), () -> "", o -> o instanceof String);
         b.pop();
 
         b.push("privacy");

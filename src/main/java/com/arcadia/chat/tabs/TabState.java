@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 
 import com.arcadia.chat.ChatConfig;
 import com.arcadia.chat.client.ChatHeads;
+import com.arcadia.chat.client.ChatRooms;
 import com.arcadia.chat.client.Drafts;
 import com.arcadia.chat.client.Emojis;
 import com.arcadia.chat.client.Reactions;
@@ -49,7 +50,10 @@ public final class TabState {
      * Ce qu'on garde d'un message affiche : qui l'a ecrit, depuis quel serveur, son empreinte (reactions) et son
      * texte d'origine (avant l'ajout des reactions).
      */
-    public record Meta(String sender, String origin, String key, Component original) {
+    public record Meta(String sender, String origin, String key, Component original, Component alternate, boolean translated) {
+        Meta(String sender, String origin, String key, Component original) {
+            this(sender, origin, key, original, null, false);
+        }
     }
 
     /** Par message affiche (cle faible : un message oublie du chat disparait aussi d'ici). */
@@ -178,6 +182,8 @@ public final class TabState {
 
     public static void disable() {
         enabled = false;
+        pendingReplacements.clear();
+        ChatRooms.clear();
         Reactions.clear();
         remotePlayers = List.of();
         pinned = List.of();
@@ -294,6 +300,10 @@ public final class TabState {
         META.put(message, new Meta(in.sender(), in.origin(), Reactions.keyOf(in.sender(), message.content().getString()),
                 message.content()));
         history.addFirst(new Entry(in.category(), in.key(), message, lower(message.content())));
+        revision++;
+        if (!pendingReplacements.isEmpty()) {
+            pendingReplacements.removeIf(TabState::applyReplacement);
+        }
         int max = ChatConfig.HISTORY.get();
         while (history.size() > max) {
             history.removeLast();
@@ -316,6 +326,148 @@ public final class TabState {
     /** Retire un message de l'historique (remplace par sa repetition regroupee). */
     public static void forget(GuiMessage message) {
         history.removeIf(entry -> entry.message() == message);
+        revision++;
+    }
+
+    /** Augmente a chaque changement de l'historique de la session. */
+    private static long revision;
+
+    public static long revision() {
+        return revision;
+    }
+
+    /** Une ligne gardee pour la session seulement : equipe et messages systeme, dans l'ecran facon Discord. */
+    public record SessionLine(Component content, String sender) {
+    }
+
+    /** Les lignes de cet onglet, de la plus ancienne a la plus recente. */
+    public static List<SessionLine> sessionLines(ChatTab tab) {
+        List<SessionLine> lines = new ArrayList<>();
+        for (Entry entry : history) {
+            if (tab.accepts(entry.category(), entry.key())) {
+                Meta meta = META.get(entry.message());
+                lines.add(0, new SessionLine(meta == null ? entry.message().content() : meta.original(), meta == null ? "" : meta.sender()));
+            }
+        }
+        return lines;
+    }
+
+    /**
+     * Remplace le texte d'une ligne deja recue par sa traduction, en gardant ce qui la precede (grade, pseudo) et sa mise en
+     * forme. Sans ligne correspondante (partage, message venu d'un autre circuit), rien ne change.
+     */
+    public static void replaceLine(String sender, String raw, Component translated, boolean anyAge) {
+        if (!enabled) {
+            return;
+        }
+        // La ligne du chat et le message conserve voyagent separement : la ligne peut encore etre en route.
+        long now = System.currentTimeMillis();
+        Replacement replacement = new Replacement(sender, lower(Emojis.apply(Component.literal(raw))), translated, now, anyAge);
+        if (!applyReplacement(replacement)) {
+            pendingReplacements.removeIf(r -> now - r.at() > REPLACEMENT_WAIT_MS);
+            pendingReplacements.add(replacement);
+        }
+    }
+
+    private record Replacement(String sender, String wanted, Component translated, long at, boolean anyAge) {
+    }
+
+    private static final long REPLACEMENT_WAIT_MS = 15_000;
+    /** Une traduction plus ancienne ne touche jamais une ligne : deux joueurs peuvent ecrire la meme chose a une minute d'ecart. */
+    private static final int RECENT_LINE_TICKS = 20 * 60;
+    private static final List<Replacement> pendingReplacements = new ArrayList<>();
+
+    /** @return true si la ligne a ete trouvee */
+    private static boolean applyReplacement(Replacement replacement) {
+        String sender = replacement.sender();
+        String wanted = replacement.wanted();
+        Component translated = replacement.translated();
+        int ticks = Minecraft.getInstance().gui.getGuiTicks();
+        Deque<Entry> updated = new ArrayDeque<>(history.size());
+        boolean done = false;
+        boolean visible = false;
+        for (Entry entry : history) {
+            Meta meta = META.get(entry.message());
+            String text = meta == null ? "" : lower(meta.original());
+            if (!done && meta != null && meta.sender().equalsIgnoreCase(sender) && text.endsWith(wanted)
+                    && (replacement.anyAge() || ticks - entry.message().addedTime() < RECENT_LINE_TICKS)) {
+                Component line = withTail(meta.original(), meta.original().getString().length() - wanted.length(), translated);
+                // On garde l'ancienne ligne pour pouvoir y revenir, sauf si le message a ete supprime ou modifie.
+                Meta next = replacement.anyAge() ? new Meta(meta.sender(), meta.origin(), meta.key(), line)
+                        : new Meta(meta.sender(), meta.origin(), meta.key(), line, meta.original(), true);
+                GuiMessage fresh = Reactions.withContent(entry.message(), Reactions.decorate(line, meta.key()));
+                META.put(fresh, next);
+                updated.addLast(new Entry(entry.category(), entry.key(), fresh, entry.text()));
+                visible = active.accepts(entry.category(), entry.key()) && matchesSearch(entry.text());
+                done = true;
+            } else {
+                updated.addLast(entry);
+            }
+        }
+        if (done) {
+            history.clear();
+            history.addAll(updated);
+            revision++;
+            if (visible) {
+                refresh();
+            }
+        }
+        return done;
+    }
+
+    /** Clic droit sur un message du chat habituel : passe de sa traduction a l'original, et inversement. */
+    public static void toggleOriginal(GuiMessage message) {
+        Meta meta = META.get(message);
+        if (meta == null || meta.alternate() == null) {
+            return;
+        }
+        Meta swapped = new Meta(meta.sender(), meta.origin(), meta.key(), meta.alternate(), meta.original(), !meta.translated());
+        GuiMessage fresh = Reactions.withContent(message, Reactions.decorate(swapped.original(), meta.key()));
+        META.put(fresh, swapped);
+        Deque<Entry> updated = new ArrayDeque<>(history.size());
+        for (Entry entry : history) {
+            updated.addLast(entry.message() == message ? new Entry(entry.category(), entry.key(), fresh, entry.text()) : entry);
+        }
+        history.clear();
+        history.addAll(updated);
+        revision++;
+        refresh();
+    }
+
+    /** Les {@code keep} premiers caracteres de la ligne, avec leur mise en forme, suivis du nouveau texte. */
+    private static Component withTail(Component line, int keep, Component tail) {
+        MutableComponent out = Component.empty();
+        int[] left = {keep};
+        net.minecraft.network.chat.Style[] last = {net.minecraft.network.chat.Style.EMPTY};
+        line.visit((style, text) -> {
+            last[0] = style;
+            if (left[0] > 0) {
+                out.append(Component.literal(text.substring(0, Math.min(left[0], text.length()))).withStyle(style));
+                left[0] -= text.length();
+            }
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out.append(Component.empty().withStyle(last[0].withHoverEvent(null).withClickEvent(null)).append(tail));
+    }
+
+    /** Ce texte, sans auteur, mentionne-t-il le joueur ? */
+    public static boolean mentionsSelf(Component body) {
+        var player = Minecraft.getInstance().player;
+        return ChatConfig.MENTIONS.get() && player != null
+                && mentionPattern(player.getGameProfile().getName()).matcher(body.getString()).find();
+    }
+
+    /** Ce texte, avec la mention du joueur mise en valeur. */
+    public static Component withMentions(Component body) {
+        return mentionsSelf(body) ? highlightMention(body) : body;
+    }
+
+    public static boolean hasTeam() {
+        return team;
+    }
+
+    public static boolean isCurrentServer(String id) {
+        return serverId.equals(id);
     }
 
     public static void clearHistory() {

@@ -91,6 +91,11 @@ public final class ChatHeads {
         graphics.setColor(1F, 1F, 1F, 1F);
     }
 
+    /** Dessine la tete a la taille voulue (ecran facon Discord). */
+    public static void drawSized(GuiGraphics graphics, String sender, int x, int y, int size) {
+        PlayerFaceRenderer.draw(graphics, skinOf(sender), x, y, size);
+    }
+
     private static PlayerSkin skinOf(String name) {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         PlayerInfo info = connection == null ? null : connection.getPlayerInfo(name);
